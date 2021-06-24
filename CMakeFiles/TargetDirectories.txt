@@ -1,0 +1,3 @@
+/home/colin/emu/CMakeFiles/rebuild_cache.dir
+/home/colin/emu/CMakeFiles/edit_cache.dir
+/home/colin/emu/CMakeFiles/emu.dir

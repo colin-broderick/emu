@@ -1,0 +1,26 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/colin/emu/src/cpu.cpp
+iostream
+-
+iomanip
+-
+cpu.hpp
+/home/colin/emu/src/cpu.hpp
+memory.hpp
+/home/colin/emu/src/memory.hpp
+
+include/cpu.hpp
+
+include/memory.hpp
+array
+-
+iostream
+-
+

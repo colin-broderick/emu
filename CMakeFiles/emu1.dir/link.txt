@@ -1,0 +1,1 @@
+/usr/bin/c++     CMakeFiles/emu1.dir/src/main.cpp.o  -o build/emu1 
