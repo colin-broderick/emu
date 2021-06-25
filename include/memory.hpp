@@ -4,12 +4,14 @@
 #include <array>
 #include <iostream>
 
+#include "utils.hpp"
+
 class Memory
 {
     public:
         Memory();
 
-        std::array<char, 64> data;
+        std::array<Byte, 0xffff> data;
 };
 
 std::ostream& operator<<(std::ostream& stream, const Memory& memory);

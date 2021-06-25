@@ -5,6 +5,7 @@
 #include <condition_variable>
 #include <thread>
 #include <chrono>
+#include <iostream>
 
 class Semaphore
 {
@@ -29,19 +30,19 @@ class Semaphore
             count--;
         }
 
-        static void clock_function(Semaphore* sem)
+        static inline void clock_function(Semaphore* sem, unsigned int cycles)
         {
-            while (true)
+            while (cycles--)
             {
                 std::this_thread::sleep_for(std::chrono::milliseconds{500});
                 sem->notify();
             }
         }
-
+        
+        int count;
     private:
         std::mutex mtx;
         std::condition_variable cv;
-        int count;
 };
 
 #endif

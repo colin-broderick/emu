@@ -4,13 +4,16 @@
 CMakeFiles/emu.dir/src/cpu.cpp.o: src/cpu.cpp
 CMakeFiles/emu.dir/src/cpu.cpp.o: include/cpu.hpp
 CMakeFiles/emu.dir/src/cpu.cpp.o: include/memory.hpp
-CMakeFiles/emu.dir/src/cpu.cpp.o: include/semaphore.h
+CMakeFiles/emu.dir/src/cpu.cpp.o: include/semaphore.hpp
+CMakeFiles/emu.dir/src/cpu.cpp.o: include/utils.hpp
 
 CMakeFiles/emu.dir/src/main.cpp.o: src/main.cpp
 CMakeFiles/emu.dir/src/main.cpp.o: include/cpu.hpp
 CMakeFiles/emu.dir/src/main.cpp.o: include/memory.hpp
-CMakeFiles/emu.dir/src/main.cpp.o: include/semaphore.h
+CMakeFiles/emu.dir/src/main.cpp.o: include/semaphore.hpp
+CMakeFiles/emu.dir/src/main.cpp.o: include/utils.hpp
 
 CMakeFiles/emu.dir/src/memory.cpp.o: src/memory.cpp
 CMakeFiles/emu.dir/src/memory.cpp.o: include/memory.hpp
+CMakeFiles/emu.dir/src/memory.cpp.o: include/utils.hpp
 

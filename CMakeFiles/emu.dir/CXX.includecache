@@ -19,16 +19,20 @@ semaphore.h
 /home/colin/emu/src/semaphore.h
 
 include/cpu.hpp
-semaphore.h
-include/semaphore.h
+semaphore.hpp
+include/semaphore.hpp
+utils.hpp
+include/utils.hpp
 
 include/memory.hpp
 array
 -
 iostream
 -
+utils.hpp
+include/utils.hpp
 
-include/semaphore.h
+include/semaphore.hpp
 mutex
 -
 condition_variable
@@ -36,5 +40,11 @@ condition_variable
 thread
 -
 chrono
+-
+iostream
+-
+
+include/utils.hpp
+stdint.h
 -
 

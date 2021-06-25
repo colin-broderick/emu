@@ -5,12 +5,15 @@ CMakeFiles/emu.dir/src/cpu.cpp.o
  /home/colin/emu/src/cpu.cpp
  include/cpu.hpp
  include/memory.hpp
- include/semaphore.h
+ include/semaphore.hpp
+ include/utils.hpp
 CMakeFiles/emu.dir/src/main.cpp.o
  /home/colin/emu/src/main.cpp
  include/cpu.hpp
  include/memory.hpp
- include/semaphore.h
+ include/semaphore.hpp
+ include/utils.hpp
 CMakeFiles/emu.dir/src/memory.cpp.o
  /home/colin/emu/src/memory.cpp
  include/memory.hpp
+ include/utils.hpp
