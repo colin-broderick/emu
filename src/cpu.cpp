@@ -3,6 +3,7 @@
 
 #include "cpu.hpp"
 #include "memory.hpp"
+#include "semaphore.h"
 
 CPU::CPU()
 {
@@ -10,26 +11,22 @@ CPU::CPU()
     SP = 63;
 }
 
-void CPU::run(Memory& memory, unsigned int cycles)
+void CPU::run(Memory& memory, Semaphore& sem)
 {
-    while (cycles)
+    while (true)
     {
-        std::cout << *this << std::endl;
-        std::cout << memory << std::endl;
-        std::cout << "Enter to continue\n";
-        std::cin.get();
         // Read next instruction according to value of IP.
         // Costs one cycle.
         // Increments IP by one.
         char instruction = get_instruction(memory);
-        cycles--;
+        sem.wait();
         IP++;
 
         switch (instruction)
         {
             case INSTR_LDA:
                 A = get_instruction(memory);
-                cycles--;
+                sem.wait();
                 IP++;
                 break;
             case INSTR_MOV:

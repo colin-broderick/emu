@@ -10,3 +10,4 @@ include_directories(include)
 
 
 add_executable(${PROJECT_NAME} src/main.cpp src/cpu.cpp src/memory.cpp)
+target_link_libraries(${PROJECT_NAME} -pthread)

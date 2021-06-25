@@ -1,6 +1,8 @@
 #ifndef CPU_H
 #define CPU_H
 
+#include "semaphore.h"
+
 class Memory;
 
 class CPU
@@ -23,7 +25,7 @@ class CPU
         char R3;
         
         CPU();
-        void run(Memory& memory, unsigned int cycles);
+        void run(Memory& memory, Semaphore& sem);
         char get_instruction(Memory& memory);
 };
 

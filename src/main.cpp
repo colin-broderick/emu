@@ -1,5 +1,8 @@
 #include <iostream>
+#include <thread>
+#include <chrono>
 
+#include "semaphore.h"
 #include "memory.hpp"
 #include "cpu.hpp"
 
@@ -7,13 +10,13 @@ int main()
 {
     CPU cpu;
     Memory memory;
+    Semaphore sem;
     memory.data = {0x01, 0x02};
 
-    cpu.run(memory, 10);
+    std::thread clock_thread{Semaphore::clock_function, &sem};
 
-    std::cout << cpu << std::endl;
+    cpu.run(memory, sem);
 
-    std::cout << memory << std::endl;
     return 0;
 }
 

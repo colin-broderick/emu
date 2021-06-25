@@ -15,12 +15,26 @@ cpu.hpp
 /home/colin/emu/src/cpu.hpp
 memory.hpp
 /home/colin/emu/src/memory.hpp
+semaphore.h
+/home/colin/emu/src/semaphore.h
 
 include/cpu.hpp
+semaphore.h
+include/semaphore.h
 
 include/memory.hpp
 array
 -
 iostream
+-
+
+include/semaphore.h
+mutex
+-
+condition_variable
+-
+thread
+-
+chrono
 -
 
