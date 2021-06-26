@@ -8,6 +8,8 @@ class Memory;
 
 class CPU
 {
+    /********** 6502 opcodes in format: Instruction name = instruction byte // num cycles, description. ************************/
+
     // LDA - LoaD Accumulator
     // Set Z if A == 0.
     // Set N if bit 7 of A is on.
@@ -69,6 +71,8 @@ class CPU
     // BRK - Break
     const static Byte INSTR_6502_BRK = 0x00;                 // 7, Halt the program.
 
+    /***************************************************************************************************************************/
+
     private:
         void LDA_set_CPU_flags();
         void LDX_set_CPU_flags();
@@ -77,26 +81,29 @@ class CPU
         void ORA_set_CPU_flags();
 
     public:
-        Word SP;
-        Word IP;
-        Byte A;
-        Byte X;
-        Byte Y;
+        // Attributes -----------------------------------------------------------------------------------------------------------
+        Word SP;           // Stack pointer.
+        Word IP;           // Instruction pointer.
+        Byte A, X, Y;      // Accumulator and registers.
+        bool C, Z, I, D, B, V, N;   // CPU flags.     
+        Semaphore sem;     // The semaphore is notified on every clock tick to release a cycle for consumption by the CPU.
 
-        bool C, Z, I, D, B, V, N;
-        
+        // Constructors ---------------------------------------------------------------------------------------------------------
         CPU();
-        void run(Memory& memory, Semaphore& sem);
 
+        // Setters --------------------------------------------------------------------------------------------------------------
         void set_byte(Memory& memory, Word address, Byte value);
 
+        // Getters --------------------------------------------------------------------------------------------------------------
         Byte get_byte(Memory& memory);
         Byte get_byte(Memory& memory, const Byte address);
         Byte get_byte(Memory& memory, const Word address);
         Word get_word(Memory& memory);
         Word get_word(Memory& memory, const Byte address);
-
         Byte flags_as_byte();
+
+        // General --------------------------------------------------------------------------------------------------------------
+        void run(Memory& memory);
 };
 
 std::ostream& operator<<(std::ostream& stream, const CPU& cpu);

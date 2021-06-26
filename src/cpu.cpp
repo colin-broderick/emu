@@ -9,8 +9,8 @@
 
 CPU::CPU()
 {
-    IP = 0;
-    SP = 63;
+    IP = 0x00;
+    SP = 0xFF;
 }
 
 void CPU::LDA_set_CPU_flags()
@@ -19,7 +19,7 @@ void CPU::LDA_set_CPU_flags()
     {
         N = true;
     }
-    if (A == 0)
+    else if (A == 0)
     {
         Z = true;
     }
@@ -44,7 +44,14 @@ void CPU::LDX_set_CPU_flags()
 
 void CPU::LDY_set_CPU_flags()
 {
-    LDA_set_CPU_flags();
+    if (Y & 0b10000000)
+    {
+        N = true;
+    }
+    else if (Y == 0)
+    {
+        Z = true;
+    }
 }
 
 void CPU::TAX_set_CPU_flags()
@@ -52,7 +59,7 @@ void CPU::TAX_set_CPU_flags()
     LDX_set_CPU_flags();
 }
 
-void CPU::run(Memory& memory, Semaphore& sem)
+void CPU::run(Memory& memory)
 {
     while (true)
     {
@@ -384,35 +391,35 @@ void CPU::run(Memory& memory, Semaphore& sem)
 
 void CPU::set_byte(Memory& memory, Word address, Byte value)
 {
-    memory.data[address] = value;
+    memory[address] = value;
 }
 
 Byte CPU::get_byte(Memory& memory)
 {
-    return memory.data[IP];
+    return memory[IP];
 }
 
 Byte CPU::get_byte(Memory& memory, const Byte address)
 {
-    return memory.data[address];
+    return memory[address];
 }
 
 Byte CPU::get_byte(Memory& memory, const Word address)
 {
-    return memory.data[address];
+    return memory[address];
 }
 
 Word CPU::get_word(Memory& memory)
 {
-    Word val1 = (Word)memory.data[IP];
-    Word val2 = (Word)memory.data[IP+1];
+    Word val1 = (Word)memory[IP];
+    Word val2 = (Word)memory[IP+1];
     return (val2 << 8) | val1;
 }
 
 Word CPU::get_word(Memory& memory, const Byte address)
 {
-    Word val1 = (Word)memory.data[address];
-    Word val2 = (Word)memory.data[address+1];
+    Word val1 = (Word)memory[address];
+    Word val2 = (Word)memory[address+1];
     return (val2 << 8) | val1;
 }
 

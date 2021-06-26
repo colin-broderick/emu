@@ -1,8 +1,19 @@
+#include <thread>
+
 #include "system.hpp"
 
 System::System()
 {
     memory.data = {0};
+}
+
+inline void System::clock_function(Semaphore* cpu_sem, unsigned int cycles)
+{
+    while (cycles--)
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds{150});
+        cpu_sem->notify();
+    }
 }
 
 void System::load_example_prog(unsigned int which)
@@ -72,7 +83,7 @@ void System::load_example_prog(unsigned int which)
 
 void System::run()
 {
-    std::thread clock_thread{Semaphore::clock_function, &sem, 100};
-    cpu.run(memory, sem);
+    std::thread clock_thread{clock_function, &cpu.sem, 100};
+    cpu.run(memory);
     clock_thread.join();
 }

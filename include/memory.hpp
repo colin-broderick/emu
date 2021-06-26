@@ -9,13 +9,19 @@
 class Memory
 {
     public:
+        // Attributes -----------------------------------------------------------------------------------------------------------
+        std::array<Byte, 0xffff> data;
+
+        // Constructors ---------------------------------------------------------------------------------------------------------
         Memory();
 
-        void insert_rom(Byte start_address);
+        // Operators ------------------------------------------------------------------------------------------------------------
+        Byte& operator[](int index);
 
-        std::array<Byte, 0xffff> data;
+        // General --------------------------------------------------------------------------------------------------------------
+        void insert_rom(Byte start_address);
 };
 
-std::ostream& operator<<(std::ostream& stream, const Memory& memory);
+std::ostream& operator<<(std::ostream& stream, Memory& memory);
 
 #endif

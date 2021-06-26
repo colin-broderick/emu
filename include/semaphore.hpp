@@ -3,16 +3,10 @@
 
 #include <mutex>
 #include <condition_variable>
-#include <thread>
-#include <chrono>
-#include <iostream>
 
 class Semaphore
 {
     public:
-        Semaphore() : count(0) {}
-        Semaphore(int count_) : count(count_) {}
-        
         inline void notify()
         {
             std::unique_lock<std::mutex> lock(mtx);
@@ -29,18 +23,9 @@ class Semaphore
             }
             count--;
         }
-
-        static inline void clock_function(Semaphore* sem, unsigned int cycles)
-        {
-            while (cycles--)
-            {
-                std::this_thread::sleep_for(std::chrono::milliseconds{150});
-                sem->notify();
-            }
-        }
         
-        int count;
     private:
+        int count = 0;
         std::mutex mtx;
         std::condition_variable cv;
 };
