@@ -18,7 +18,7 @@ std::ostream& operator<<(std::ostream& stream, const Memory& memory)
         {
             stream << "0x" << std::hex << std::setw(2) << std::setfill('0') << (int)memory.data[i*8+j] << " ";
         }
-        std::cout << "\n";
+        stream << "\n";
     }
     return stream;
 }

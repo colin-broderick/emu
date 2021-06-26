@@ -15,7 +15,7 @@ CPU::CPU()
 
 void CPU::LDA_set_CPU_flags()
 {
-    if (A && 0b10000000)
+    if (A & 0b10000000)
     {
         N = true;
     }
@@ -25,17 +25,42 @@ void CPU::LDA_set_CPU_flags()
     }
 }
 
+void CPU::ORA_set_CPU_flags()
+{
+    LDA_set_CPU_flags();
+}
+
+void CPU::LDX_set_CPU_flags()
+{
+    if (X & 0b10000000)
+    {
+        N = true;
+    }
+    if (X == 0)
+    {
+        Z = true;
+    }
+}
+
+void CPU::LDY_set_CPU_flags()
+{
+    LDA_set_CPU_flags();
+}
+
+void CPU::TAX_set_CPU_flags()
+{
+    LDX_set_CPU_flags();
+}
+
 void CPU::run(Memory& memory, Semaphore& sem)
 {
     while (true)
     {
-        std::cout << (int)memory.data[0x0202] << "\n";
-        if (DEBUG)
-        {
-            std::cout << *this << "\n";
-            std::cout << memory << "\n";
-        }
-        // std::cout << "go\n";
+        #if DEBUG
+        std::cout << *this << "\n";
+        std::cout << memory << "\n";
+        #endif
+
         // Grab an instruction from RAM.
         Byte instruction = get_byte(memory);
 
@@ -46,15 +71,9 @@ void CPU::run(Memory& memory, Semaphore& sem)
         // We increment the instruction pointer to point to the next byte in memory.
         IP++;
 
-        if (DEBUG)
-        {
-            std::cout << *this << "\n";
-            std::cout << memory << "\n";
-        }
-
         switch (instruction)
         {
-            case INSTR_LDA_IMMEDIATE:
+            case INSTR_6502_LDA_IMMEDIATE:
                 // If the instruction is LDA, we grab the next byte and store it in the acc.
                 A = get_byte(memory);
 
@@ -67,25 +86,14 @@ void CPU::run(Memory& memory, Semaphore& sem)
                 // And we increment the IP again.
                 IP++;
 
-                if (DEBUG)
-                {
-                    std::cout << *this << "\n";
-                    std::cout << memory << "\n";
-                }
-
                 break;
 
-            case INSTR_LDA_ZEROPAGE:
+            case INSTR_6502_LDA_ZEROPAGE:
                 {
                     // Get the address and incrememnt PC
                     Byte data_address = get_byte(memory);
                     sem.wait();
                     IP++;
-                    if (DEBUG)
-                    {
-                        std::cout << *this << "\n";
-                        std::cout << memory << "\n";
-                    }
 
                     // Load from the address into RAM
                     A = get_byte(memory, data_address);
@@ -95,7 +103,7 @@ void CPU::run(Memory& memory, Semaphore& sem)
                 }
                 break;
 
-            case INSTR_LDA_ZEROPAGE_X:
+            case INSTR_6502_LDA_ZEROPAGE_X:
                 {
                     // get address
                     Byte data_address = get_byte(memory);
@@ -113,7 +121,7 @@ void CPU::run(Memory& memory, Semaphore& sem)
                 }
                 break;
 
-            case INSTR_LDA_ABSOLUTE:
+            case INSTR_6502_LDA_ABSOLUTE:
                 {
                     // Load address
                     Word data_address = get_word(memory);
@@ -129,7 +137,17 @@ void CPU::run(Memory& memory, Semaphore& sem)
                 }
                 break;
 
-            case INSTR_STA_ABSOLUTE:
+            case INSTR_6502_LDY_IMMEDIATE:
+                {
+                    // If the instruction is LDA, we grab the next byte and store it in the acc.
+                    Y = get_byte(memory);
+                    LDY_set_CPU_flags();
+                    sem.wait();
+                    IP++;
+                }
+                break;
+
+            case INSTR_6502_STA_ABSOLUTE:
                 {
                     // Load address
                     Word data_address = get_word(memory);
@@ -144,22 +162,229 @@ void CPU::run(Memory& memory, Semaphore& sem)
                 }
                 break;
 
+            case INSTR_6502_STA_ZEROPAGE:
+                {
+                    // get address
+                    Byte data_address = get_byte(memory);
+                    sem.wait();
+                    IP++;
+                    
+                    // get data from address
+                    set_byte(memory, data_address, A);
+                    sem.wait();
+                }
+                break;
+
+            case INSTR_6502_STX_ABSOLUTE:
+                {
+                    // Load address
+                    Word data_address = get_word(memory);
+                    sem.wait();
+                    IP++;
+                    sem.wait();
+                    IP++;
+
+                    // Set value of memory address to A.
+                    set_byte(memory, data_address, X);
+                    sem.wait();
+                }
+                break;
+
+            case INSTR_6502_STY_ABSOLUTE:
+                {
+                    // Load address
+                    Word data_address = get_word(memory);
+                    sem.wait();
+                    IP++;
+                    sem.wait();
+                    IP++;
+
+                    // Set value of memory address to A.
+                    set_byte(memory, data_address, Y);
+                    sem.wait();
+                }
+                break;
+
+            case INSTR_6502_TAX:
+                {
+                    // Copy A into X.
+                    X = A;
+                    TAX_set_CPU_flags();
+                    sem.wait();
+                }
+                break;
+
+            case INSTR_6502_INX:
+                {
+                    // Increment X.
+                    X++;
+                    LDX_set_CPU_flags();
+                    sem.wait();
+                }
+                break;
+
+            case INSTR_6502_LDX_IMMEDIATE:
+                {
+                    // Load data into X.
+                    X = get_byte(memory);
+                    LDX_set_CPU_flags();
+                    sem.wait();
+                    IP++;
+                }
+                break;
+
+            case INSTR_6502_DEX:
+                {
+                    X--;
+                    LDX_set_CPU_flags();
+                    sem.wait();
+                }
+                break;
+
+            case INSTR_6502_CPX_IMMEDIATE:
+                {
+                    Byte result = X - get_byte(memory);
+                    if (result >= 0)
+                    {
+                        C = true;
+                        if (result == 0)
+                        {
+                            Z = true;
+                        }
+                        if (result & 0b10000000)
+                        {
+                            N = true;
+                        }
+                    }
+                    sem.wait();
+                    IP++;
+                }
+                break;
+
+            case INSTR_6502_BNE_RELATIVE:
+                {
+                    auto current_page = IP / 256;
+                    
+                    bool jump = !Z;
+                    sem.wait();
+                    // IP++;
+                    
+                    if (jump)
+                    {
+                        IP = (IP + get_byte(memory)) % 256;
+                        sem.wait();
+                    }
+                    IP++;
+
+                    // This should take two additional clock cycles if the branch leads to a new page.
+                    auto new_page = IP / 256;
+                    if (current_page != new_page)
+                    {
+                        sem.wait();
+                        sem.wait();
+                    }
+
+                }
+                break;
+
+            case INSTR_6502_SED:
+                {
+                    D = true;
+                    sem.wait();
+                    IP++;
+                }
+                break;
+
+            case INSTR_6502_ORA_INDIRECT_X:
+                {
+                    // Read next byte to get indirect address and jump over it
+                    Byte indirect_address = get_byte(memory) + X;
+                    sem.wait();
+                    IP++;
+
+                    // Get the data from other address
+                    Word target_address = get_word(memory, indirect_address);
+                    sem.wait();
+
+                    // Get the data to be ORed with A.
+                    Byte data = get_byte(memory, target_address);
+                    sem.wait();
+
+                    // Do the OR, putting result in A.
+                    A |= data;
+                    sem.wait();
+
+                    ORA_set_CPU_flags();
+                    sem.wait();
+                }
+                break;
+
+            case INSTR_6502_LDA_INDIRECT_X:
+                {
+                    // Read next byte to get indirect address and jump over it
+                    Byte indirect_address = get_byte(memory) + X;
+                    sem.wait();
+                    IP++;
+
+                    // Get the data from other address
+                    Word target_address = get_word(memory, indirect_address);
+                    sem.wait();
+
+                    // Get the data to be ORed with A.
+                    A = get_byte(memory, target_address);
+                    sem.wait();
+
+                    LDA_set_CPU_flags();
+                    sem.wait();
+                    sem.wait();
+                }
+                break;
+
+            case INSTR_6502_ADC_IMMEDIATE:
+                {
+                    // TODO: Explain this. What I've done is mostly based on
+                    // http://www.righto.com/2012/12/the-6502-overflow-flag-explained.html
+                    Byte data = get_byte(memory);
+                    IP++;
+
+                    Word result = (Word)data + (Word)A + (Word)C;       // Result = accumulator + data_from_memory + carry_flag
+                    Z = result == 0;                                    // Set Z if result is zero
+                    C = result > 255;                                   // Set C if result overflowed, i.e. didn't fit in eight bits
+                    N = result & 0b10000000;                            // Set N if result is negative (i.e. sign bit is on)
+                    V = ((A ^ result) & (data ^ result) & 0x80) != 0;   // TODO: This part is not fully understood.
+                    A = (Byte)(result & 0xFF);                          // Accumulator is set to the part of the result that fits in eight bits.
+                    sem.wait();
+                }
+                break;
+
+            case INSTR_6502_BRK:
+                {
+                    // TODO: Why does this take seven cycles?
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    B = true;
+                    set_byte(memory, SP, IP);
+                    SP--;
+                    set_byte(memory, SP, flags_as_byte());
+                    std::cout << "BRK reached" << std::endl;
+                    return;
+                }
+                break;
+
             default:
                 std::cout << "Unknown instruction: 0x" << std::hex << std::setw(2) << std::setfill('0') << (int)instruction << "\n";
-                sem.wait();
-                IP++;
-                break;
+                return;
         }
     }
 }
 
 void CPU::set_byte(Memory& memory, Word address, Byte value)
 {
-    std::cout << "Set memory address " << (int)address << " to value " << (int)value << "\n";
-    std::cout << memory.data[address] << "\n";
     memory.data[address] = value;
-    std::cout << memory.data[address] << "\n";
-
 }
 
 Byte CPU::get_byte(Memory& memory)
@@ -181,21 +406,36 @@ Word CPU::get_word(Memory& memory)
 {
     Word val1 = (Word)memory.data[IP];
     Word val2 = (Word)memory.data[IP+1];
-    Word val3 = (val1 << 8) | val2;
-    std::cout << "get_word" << "\n";
-    std::cout << val1 << " " << val2 << " " << val3 << "\n";
-    return val3;
+    return (val2 << 8) | val1;
 }
 
+Word CPU::get_word(Memory& memory, const Byte address)
+{
+    Word val1 = (Word)memory.data[address];
+    Word val2 = (Word)memory.data[address+1];
+    return (val2 << 8) | val1;
+}
 
-
+Byte CPU::flags_as_byte()
+{
+    return (N << 7) | (V << 6) | (true << 5) | (B << 4) | (D << 3) | (I << 2) | (Z << 1) | (C << 1);
+}
 
 std::ostream& operator<<(std::ostream& stream, const CPU& cpu)
 {
     stream << "A: 0x" << std::hex << std::setw(2) << std::setfill('0') << (int)cpu.A;
     stream << "   X: 0x" << std::hex << std::setw(2) << std::setfill('0') << (int)cpu.X;
     stream << "   Y: 0x" << std::hex << std::setw(2) << std::setfill('0') << (int)cpu.Y;
-    stream << "   IP: 0x" << std::hex << std::setw(2) << std::setfill('0') << (int)cpu.IP;
-    stream << "   SP: 0x" << std::hex << std::setw(2) << std::setfill('0') << (int)cpu.SP;
+    stream << "   IP: 0x" << std::hex << std::setw(4) << std::setfill('0') << (int)cpu.IP;
+    stream << "   SP: 0x" << std::hex << std::setw(4) << std::setfill('0') << (int)cpu.SP;
+    stream << "\nFlags: ";
+    stream << (int)cpu.N;
+    stream << (int)cpu.V;
+    stream << "-";
+    stream << (int)cpu.B;
+    stream << (int)cpu.D;
+    stream << (int)cpu.I;
+    stream << (int)cpu.Z;
+    stream << (int)cpu.C;
     return stream;
 }

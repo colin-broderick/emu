@@ -11,6 +11,8 @@ class Memory
     public:
         Memory();
 
+        void insert_rom(Byte start_address);
+
         std::array<Byte, 0xffff> data;
 };
 
