@@ -9,20 +9,14 @@
 
 CPU::CPU()
 {
-    IP = 0x00;
-    SP = 0xFF;
+    IP = 0x0000;
+    SP = 0x01FF;
 }
 
 void CPU::LDA_set_CPU_flags()
 {
-    if (A & 0b10000000)
-    {
-        N = true;
-    }
-    else if (A == 0)
-    {
-        Z = true;
-    }
+    N = (A & 0b10000000);
+    Z = (A == 0);
 }
 
 void CPU::ORA_set_CPU_flags()
@@ -32,31 +26,24 @@ void CPU::ORA_set_CPU_flags()
 
 void CPU::LDX_set_CPU_flags()
 {
-    if (X & 0b10000000)
-    {
-        N = true;
-    }
-    if (X == 0)
-    {
-        Z = true;
-    }
+    N = (X & 0b10000000);
+    Z = (X == 0);
 }
 
 void CPU::LDY_set_CPU_flags()
 {
-    if (Y & 0b10000000)
-    {
-        N = true;
-    }
-    else if (Y == 0)
-    {
-        Z = true;
-    }
+    N = (Y & 0b10000000);
+    Z = (Y == 0);
 }
 
 void CPU::TAX_set_CPU_flags()
 {
     LDX_set_CPU_flags();
+}
+
+void CPU::TXA_set_CPU_flags()
+{
+    LDA_set_CPU_flags();
 }
 
 void CPU::run(Memory& memory)
@@ -169,6 +156,25 @@ void CPU::run(Memory& memory)
                 }
                 break;
 
+            case INSTR_6502_STA_ABSOLUTE_Y:
+                {
+                    // get address in next two bytes
+                    Word target_address = get_word(memory);
+                    sem.wait();
+                    IP++;
+                    sem.wait();
+                    IP++;
+
+                    // Add Y to address
+                    target_address += Y;
+                    sem.wait();
+
+                    // Store A in address
+                    memory[target_address] = A;
+                    sem.wait();
+                }
+                break;
+
             case INSTR_6502_STA_ZEROPAGE:
                 {
                     // get address
@@ -213,44 +219,74 @@ void CPU::run(Memory& memory)
                 break;
 
             case INSTR_6502_TAX:
-                {
-                    // Copy A into X.
-                    X = A;
-                    TAX_set_CPU_flags();
-                    sem.wait();
-                }
+                // Copy A into X.
+                X = A;
+                TAX_set_CPU_flags();
+                sem.wait();
+                break;
+
+            case INSTR_6502_TXA:
+                A = X;
+                TXA_set_CPU_flags();
+                sem.wait();
                 break;
 
             case INSTR_6502_INX:
-                {
-                    // Increment X.
-                    X++;
-                    LDX_set_CPU_flags();
-                    sem.wait();
-                }
+                // Increment X.
+                X++;
+                LDX_set_CPU_flags();
+                sem.wait();
+                break;
+
+            case INSTR_6502_INY:
+                Y++;
+                LDY_set_CPU_flags();
+                sem.wait();
                 break;
 
             case INSTR_6502_LDX_IMMEDIATE:
+                // Load data into X.
+                X = get_byte(memory);
+                LDX_set_CPU_flags();
+                sem.wait();
+                IP++;
+                break;
+
+            case INSTR_6502_DEX:
+                X--;
+                LDX_set_CPU_flags();
+                sem.wait();
+                break;
+
+            case INSTR_6502_DEY:
+                Y--;
+                LDY_set_CPU_flags();
+                sem.wait();
+                break;
+
+            case INSTR_6502_CPX_IMMEDIATE:
                 {
-                    // Load data into X.
-                    X = get_byte(memory);
-                    LDX_set_CPU_flags();
+                    Word result = (Word)X - (Word)get_byte(memory);
+                    if (result >= 0)
+                    {
+                        C = true;
+                        if (result == 0)
+                        {
+                            Z = true;
+                        }
+                        if (result & 0b10000000)
+                        {
+                            N = true;
+                        }
+                    }
                     sem.wait();
                     IP++;
                 }
                 break;
 
-            case INSTR_6502_DEX:
+            case INSTR_6502_CPY_IMMEDIATE:
                 {
-                    X--;
-                    LDX_set_CPU_flags();
-                    sem.wait();
-                }
-                break;
-
-            case INSTR_6502_CPX_IMMEDIATE:
-                {
-                    Byte result = X - get_byte(memory);
+                    Word result = (Word)Y - (Word)get_byte(memory);
                     if (result >= 0)
                     {
                         C = true;
@@ -295,11 +331,8 @@ void CPU::run(Memory& memory)
                 break;
 
             case INSTR_6502_SED:
-                {
-                    D = true;
-                    sem.wait();
-                    IP++;
-                }
+                D = true;
+                sem.wait();
                 break;
 
             case INSTR_6502_ORA_INDIRECT_X:
@@ -364,23 +397,67 @@ void CPU::run(Memory& memory)
                 }
                 break;
 
-            case INSTR_6502_BRK:
-                {
-                    // TODO: Why does this take seven cycles?
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    B = true;
-                    set_byte(memory, SP, IP);
-                    SP--;
-                    set_byte(memory, SP, flags_as_byte());
-                    std::cout << "BRK reached" << std::endl;
-                    return;
-                }
+            case INSTR_6502_CLD:
+                D = false;
+                sem.wait();
                 break;
+
+            case INSTR_6502_CLI:
+                I = false;
+                sem.wait();
+                break;
+
+            case INSTR_6502_CLC:
+                C = false;
+                sem.wait();
+                break;
+
+            case INSTR_6502_CLV:
+                V = false;
+                sem.wait();
+                break;
+
+            case INSTR_6502_PHA:
+                memory[SP] = A;
+                sem.wait();
+                SP--;
+                sem.wait();
+                break;
+
+            case INSTR_6502_PHP:
+                memory[SP] = flags_as_byte();
+                sem.wait();
+                SP--;
+                sem.wait();
+                break;
+
+            case INSTR_6502_PLA:
+                A = memory[SP];
+                sem.wait();
+                SP++;
+                sem.wait();
+                sem.wait();
+                LDA_set_CPU_flags();
+                break;
+
+            case INSTR_6502_NOP:
+                sem.wait();
+                break;
+
+            case INSTR_6502_BRK:
+                // TODO: Why does this take seven cycles?
+                sem.wait();
+                sem.wait();
+                sem.wait();
+                sem.wait();
+                sem.wait();
+                sem.wait();
+                B = true;
+                set_byte(memory, SP, IP);
+                SP--;
+                set_byte(memory, SP, flags_as_byte());
+                std::cout << "BRK reached" << std::endl;
+                return;
 
             default:
                 std::cout << "Unknown instruction: 0x" << std::hex << std::setw(2) << std::setfill('0') << (int)instruction << "\n";

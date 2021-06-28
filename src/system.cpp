@@ -11,14 +11,14 @@ inline void System::clock_function(Semaphore* cpu_sem, unsigned int cycles)
 {
     while (cycles--)
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds{150});
+        std::this_thread::sleep_for(std::chrono::milliseconds{25});
         cpu_sem->notify();
     }
 }
 
 void System::load_example_prog(unsigned int which)
 {
-    switch (which % 4)
+    switch (which % 6)
     {
         case 0:
             /*  Loads values into A and stores them elsewhere in memory. */
@@ -78,12 +78,40 @@ void System::load_example_prog(unsigned int which)
                 0xa1, 0x00,             // LDA ($00, X) 
                 0x00
             };
+
+        case 5:
+            /*  This program increments Y and X until Y = 0x10, then continues to
+            increment Y only until Y = 0x20. In the first stage, the value of X is
+            pushed onto the stack on every iteration. In the second stage, the
+            value is pulled from the stack into A at every iteration.
+                Throughout, the value of X (or A) is put into memory creating a 
+            mirrored pattern. Something like this could be used to draw pixels to
+            a display buffer. */
+            memory.data = {
+                0xa2, 0x00,             // LDX #$00
+                0xa0, 0x00,             // LDY #$00
+                                        // firstloop:
+                0x8a,                   // TXA
+                0x99, 0x00, 0x02,       // STA $0200, Y
+                0x48,                   // PHA
+                0xe8,                   // INX
+                0xc8,                   // INY
+                0xc0, 0x10,             // CPY #$10
+                0xd0, 0xf5,             // BNE firstloop
+                                        // secondloop:
+                0x68,                   // PLA
+                0x99, 0x00, 0x02,       // STA $0200, Y
+                0xc8,                   // INY
+                0xc0, 0x20,             // CPY #$20
+                0xd0, 0xf7,             // BNE secondloop
+                0x00                    // BRK
+            };
     }
 }
 
 void System::run()
 {
-    std::thread clock_thread{clock_function, &cpu.sem, 100};
+    std::thread clock_thread{clock_function, &cpu.sem, 1000};
     cpu.run(memory);
     clock_thread.join();
 }

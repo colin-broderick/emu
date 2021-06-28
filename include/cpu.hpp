@@ -37,6 +37,7 @@ class CPU
     // STA - STore A in memory
     const static Byte INSTR_6502_STA_ZEROPAGE = 0x85;        // 3, Load accumulator from following memory pointer.
     const static Byte INSTR_6502_STA_ABSOLUTE = 0x8D;        // 4, Store contents of A in 16-bit memory address.
+    const static Byte INSTR_6502_STA_ABSOLUTE_Y = 0x99;      // 3, Store contents of Y in following 16-bit address.
 
     // STX - STore X in memory
     const static Byte INSTR_6502_STX_ABSOLUTE = 0x8E;        // 4, Store contents of X in 16-bit memory address.
@@ -47,17 +48,29 @@ class CPU
     // TAX - Transfer A to X
     const static Byte INSTR_6502_TAX = 0xAA;                 // 2, Copies A into X.
 
+    // TXA - Transfer X to A
+    const static Byte INSTR_6502_TXA = 0x8A;                 // 2,
+
     // ADC - ADd with Carry
     const static Byte INSTR_6502_ADC_IMMEDIATE = 0x69;       // 2, Add to A with carry and all sorts of flag nonsense.
 
     // INX - INcrement X
     const static Byte INSTR_6502_INX = 0xE8;                 // 2, Incremement the value in X.
 
+    // INY - INcrement Y register
+    const static Byte INSTR_6502_INY = 0xC8;
+
     // DEX - DEcrement X
     const static Byte INSTR_6502_DEX = 0xCA;                 // 2, Decrement the value in X.
 
+    // DEY - DEcrement Y register
+    const static Byte INSTR_6502_DEY = 0x88;
+
     // CPX - ComPare X register
     const static Byte INSTR_6502_CPX_IMMEDIATE = 0xE0;       // 2, Compare value in X with value in next memory location.
+
+    // CPY - ComPare Y register
+    const static Byte INSTR_6502_CPY_IMMEDIATE = 0xC0;       // 2, As CPX, but for Y register.
 
     // BNE - Branch if Not Equal
     const static Byte INSTR_6502_BNE_RELATIVE = 0xD0;        // 2 (+1 if branch, +2 if new page), branch if the Z flag is not set.
@@ -71,6 +84,30 @@ class CPU
     // BRK - Break
     const static Byte INSTR_6502_BRK = 0x00;                 // 7, Halt the program.
 
+    // CLD - CLear Decimal flag
+    const static Byte INSTR_6502_CLD = 0xD8;                 // 2, Sets D flag to off.
+
+    // CLI - CLear Interrupt disable flag
+    const static Byte INSTR_6502_CLI = 0x58;                 // 2, Clear interrupt disable flag.
+
+    // CLC - CLear Carry flag
+    const static Byte INSTR_6502_CLC = 0x18;
+
+    // CLV - CLear oVerflow flag
+    const static Byte INSTR_6502_CLV = 0xB8;
+
+    // NOP - No OPeration, i.e. do nothing for 2 cycles
+    const static Byte INSTR_6502_NOP = 0xEA;
+
+    // PHA - PusH a copy of A onto the stack, and decrement stack pointer.
+    const static Byte INSTR_6502_PHA = 0x48;
+
+    // PHP - PusH Processor status onto stack.
+    const static Byte INSTR_6502_PHP = 0x08;
+
+    // PLA - Pull from stack into A;
+    const static Byte INSTR_6502_PLA = 0x68;
+
     /***************************************************************************************************************************/
 
     private:
@@ -78,6 +115,7 @@ class CPU
         void LDX_set_CPU_flags();
         void LDY_set_CPU_flags();
         void TAX_set_CPU_flags();
+        void TXA_set_CPU_flags();
         void ORA_set_CPU_flags();
 
     public:

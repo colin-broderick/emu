@@ -12,11 +12,21 @@ Memory::Memory()
 
 std::ostream& operator<<(std::ostream& stream, Memory& memory)
 {
-    for (unsigned int i = 0; i < 8; i++)
+    stream << "Program:\n";
+    for (unsigned int i = 0; i < 16; i++)
     {
-        for (unsigned int j = 0; j < 8; j++)
+        for (unsigned int j = 0; j < 16; j++)
         {
-            stream << "0x" << std::hex << std::setw(2) << std::setfill('0') << (int)memory[i*8+j] << " ";
+            stream << "0x" << std::hex << std::setw(2) << std::setfill('0') << (int)memory[i*16+j] << " ";
+        }
+        stream << "\n";
+    }
+    stream << "Stack:\n";
+    for (unsigned int i = 0; i < 16; i++)
+    {
+        for (unsigned int j = 0; j < 16; j++)
+        {
+            stream << "0x" << std::hex << std::setw(2) << std::setfill('0') << (int)memory[0xff + i*16+j] << " ";
         }
         stream << "\n";
     }
