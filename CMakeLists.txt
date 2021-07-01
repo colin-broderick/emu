@@ -8,4 +8,4 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY build)
 include_directories(include)
 
 add_executable(${PROJECT_NAME} src/main.cpp src/cpu.cpp src/memory.cpp src/system.cpp)
-target_link_libraries(${PROJECT_NAME} -pthread)
+target_link_libraries(${PROJECT_NAME} -pthread -O3)

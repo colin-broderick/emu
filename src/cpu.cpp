@@ -5,7 +5,7 @@
 #include "memory.hpp"
 #include "semaphore.h"
 
-#define DEBUG 1
+#define DEBUG 0
 
 CPU::CPU()
 {
@@ -54,6 +54,8 @@ void CPU::run(Memory& memory)
         std::cout << *this << "\n";
         std::cout << memory << "\n";
         #endif
+
+        // TODO Interrupt handler should go here.
 
         // Grab an instruction from RAM.
         Byte instruction = get_byte(memory);

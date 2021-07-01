@@ -9,9 +9,13 @@ System::System()
 
 inline void System::clock_function(Semaphore* cpu_sem, unsigned int cycles)
 {
+    auto time = std::chrono::system_clock::now();
+    std::chrono::nanoseconds interval{150};
+
     while (cycles--)
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds{25});
+        time += interval;
+        std::this_thread::sleep_until(time);
         cpu_sem->notify();
     }
 }
@@ -111,7 +115,7 @@ void System::load_example_prog(unsigned int which)
 
 void System::run()
 {
-    std::thread clock_thread{clock_function, &cpu.sem, 1000};
+    std::thread clock_thread{clock_function, &cpu.sem, 100000000};
     cpu.run(memory);
     clock_thread.join();
 }
