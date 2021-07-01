@@ -10,7 +10,7 @@ System::System()
 inline void System::clock_function(Semaphore* cpu_sem, unsigned int cycles)
 {
     auto time = std::chrono::system_clock::now();
-    std::chrono::nanoseconds interval{150};
+    std::chrono::milliseconds interval{100};
 
     while (cycles--)
     {
@@ -115,7 +115,7 @@ void System::load_example_prog(unsigned int which)
 
 void System::run()
 {
-    std::thread clock_thread{clock_function, &cpu.sem, 100000000};
+    std::thread clock_thread{clock_function, &cpu.sem, 1000};
     cpu.run(memory);
     clock_thread.join();
 }
