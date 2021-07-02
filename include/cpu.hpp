@@ -108,6 +108,9 @@ class CPU
     // PLA - Pull from stack into A;
     const static Byte INSTR_6502_PLA = 0x68;
 
+    // JSR - Jump to SubRoutine
+    const static Byte INSTR_6502_JSR_ABSOLUTE = 0x20;
+
     /***************************************************************************************************************************/
 
     private:
