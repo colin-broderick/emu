@@ -461,6 +461,24 @@ void CPU::run(Memory& memory)
                 std::cout << "BRK reached" << std::endl;
                 return;
 
+            case INSTR_6502_JSR_ABSOLUTE:
+                {
+                    // Pushes (address minus one) of the return point onto the stack then sets program counter to target address
+                    Word target_address = get_word(memory);
+                    IP++;
+                    memory[SP] = (IP >> 8);
+                    SP--;
+                    memory[SP] = (IP & 0xFF);
+                    SP--;
+                    IP = target_address;
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                }
+                break;
+
             default:
                 std::cout << "Unknown instruction: 0x" << std::hex << std::setw(2) << std::setfill('0') << (int)instruction << "\n";
                 return;
