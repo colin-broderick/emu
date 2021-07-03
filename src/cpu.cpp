@@ -3,7 +3,7 @@
 
 #include "cpu.hpp"
 #include "memory.hpp"
-#include "semaphore.h"
+#include "semaphore.hpp"
 
 #define DEBUG 1
 
