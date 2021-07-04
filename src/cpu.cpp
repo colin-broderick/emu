@@ -495,7 +495,7 @@ void CPU::run(Memory& memory)
                 }
                 break;
             
-            case INSTR_6502_JMP:
+            case INSTR_6502_JMP_ABSOLUTE:
                 {
                     IP = get_word(memory);
                     sem.wait();

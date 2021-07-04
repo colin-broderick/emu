@@ -115,7 +115,7 @@ class CPU
     const static Byte INSTR_6502_RTS = 0x60;                // 6, Pulls IP from stack and jumps to that address.
 
     // JMP - JuMP to address
-    const static Byte INSTR_6502_JMP = 0x4c;                // 3, Sets IP equal to address
+    const static Byte INSTR_6502_JMP_ABSOLUTE = 0x4c;                // 3, Sets IP equal to address
 
     /***************************************************************************************************************************/
 
