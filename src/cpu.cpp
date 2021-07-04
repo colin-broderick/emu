@@ -526,6 +526,12 @@ void CPU::run(Memory& memory)
                     Z = (memory[target_address] == 0);    // Set Z on if result is zero.
                     sem.wait();
                     sem.wait();
+
+            case INSTR_6502_JMP_INDIRECT:
+                {
+                    Word lookup_address = get_word(memory);
+                    IP = get_word(memory, lookup_address);
+
                     sem.wait();
                     sem.wait();
                     sem.wait();
