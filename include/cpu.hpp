@@ -117,6 +117,9 @@ class CPU
     // JMP - JuMP to address
     const static Byte INSTR_6502_JMP_ABSOLUTE = 0x4c;                // 3, Sets IP equal to address
 
+    // INC - INCrement memory
+    const static Byte INSTR_6502_INC_ABSOLUTE_X = 0xFE;      // 7, Adds one to the value in memory, setting Z and N if required
+
     /***************************************************************************************************************************/
 
     private:

@@ -515,6 +515,24 @@ void CPU::run(Memory& memory)
                 }
                 break;
 
+            case INSTR_6502_INC_ABSOLUTE_X:
+                {
+                    Word target_address = get_word(memory);
+                    target_address += X;
+                    memory[target_address]++;
+                    IP++;
+                    IP++;
+                    N = (memory[target_address] & 0x80);  // Set N on if sign bit of result is set.
+                    Z = (memory[target_address] == 0);    // Set Z on if result is zero.
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                }
+                break;
+
             default:
                 std::cout << "Unknown instruction: 0x" << std::hex << std::setw(2) << std::setfill('0') << (int)instruction << "\n";
                 return;
