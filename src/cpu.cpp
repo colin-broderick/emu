@@ -308,21 +308,33 @@ void CPU::run(Memory& memory)
 
             case INSTR_6502_BNE_RELATIVE:
                 {
-                    auto current_page = IP / 256;
+                    // Remember the starting page so we know if we've moved to a new page.
+                    Byte current_page = IP >> 8;
                     
                     bool jump = !Z;
                     sem.wait();
-                    // IP++;
-                    
+
                     if (jump)
                     {
-                        IP = (IP + get_byte(memory)) % 256;
+                        Byte dist = get_byte(memory);
+                        if (dist & 0x80)
+                        {
+                            // If jump is negative get the two's complement and subtract the result.
+                            dist = ~dist;
+                            dist += 1;
+                            IP = IP - dist;
+                        }
+                        else
+                        {
+                            // If the jump is positive, do the jump.
+                            IP = IP + dist;
+                        }
                         sem.wait();
                     }
                     IP++;
 
                     // This should take two additional clock cycles if the branch leads to a new page.
-                    auto new_page = IP / 256;
+                    Byte new_page = IP >> 8;
                     if (current_page != new_page)
                     {
                         sem.wait();
