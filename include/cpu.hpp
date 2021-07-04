@@ -116,6 +116,7 @@ class CPU
 
     // JMP - JuMP to address
     const static Byte INSTR_6502_JMP_ABSOLUTE = 0x4c;                // 3, Sets IP equal to address
+    const static Byte INSTR_6502_JMP_INDIRECT = 0x6c;                // 5, Sets IP equal to word stored at address & address + 1
 
     /***************************************************************************************************************************/
 
