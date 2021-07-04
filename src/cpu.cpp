@@ -526,6 +526,8 @@ void CPU::run(Memory& memory)
                     Z = (memory[target_address] == 0);    // Set Z on if result is zero.
                     sem.wait();
                     sem.wait();
+                }
+                break;
 
             case INSTR_6502_JMP_INDIRECT:
                 {
