@@ -22,7 +22,7 @@ inline void System::clock_function(Semaphore* cpu_sem, unsigned int cycles)
 
 void System::load_example_prog(unsigned int which)
 {
-    switch (which % 6)
+    switch (which % 7)
     {
         case 0:
             /*  Loads values into A and stores them elsewhere in memory. */
@@ -109,6 +109,16 @@ void System::load_example_prog(unsigned int which)
                 0xc0, 0x20,             // CPY #$20
                 0xd0, 0xf7,             // BNE secondloop
                 0x00                    // BRK
+            };
+        case 6:
+            memory.data = {
+                0xa2, 0x01,             // LDX #$01
+                0xa2, 0x02,             // LDY #$02
+                0x20, 0x09, 0x00,       // JSR #$08
+                0xa2, 0x03,             // LDY #$03
+                0xa2, 0x04,             // LDA #$04
+                0x60,
+                0x00
             };
     }
 }

@@ -111,6 +111,9 @@ class CPU
     // JSR - Jump to SubRoutine
     const static Byte INSTR_6502_JSR_ABSOLUTE = 0x20;
 
+    // RTS - ReTurn from Subroutine
+    const static Byte INSTR_6502_RTS = 0x60;                // 6, Pulls IP from stack and jumps to that address.
+
     /***************************************************************************************************************************/
 
     private:
@@ -141,6 +144,8 @@ class CPU
         Byte get_byte(Memory& memory, const Word address);
         Word get_word(Memory& memory);
         Word get_word(Memory& memory, const Byte address);
+        Word get_word(Memory& memory, const Word address);
+
         Byte flags_as_byte();
 
         // General --------------------------------------------------------------------------------------------------------------

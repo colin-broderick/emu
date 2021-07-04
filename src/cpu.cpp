@@ -479,6 +479,22 @@ void CPU::run(Memory& memory)
                 }
                 break;
 
+            case INSTR_6502_RTS:
+                {
+                    SP++;
+                    Word pointer = get_word(memory, SP);
+                    SP++;
+
+                    IP = pointer + 1;
+
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                }
+                break;
+
             default:
                 std::cout << "Unknown instruction: 0x" << std::hex << std::setw(2) << std::setfill('0') << (int)instruction << "\n";
                 return;
@@ -514,6 +530,13 @@ Word CPU::get_word(Memory& memory)
 }
 
 Word CPU::get_word(Memory& memory, const Byte address)
+{
+    Word val1 = (Word)memory[address];
+    Word val2 = (Word)memory[address+1];
+    return (val2 << 8) | val1;
+}
+
+Word CPU::get_word(Memory& memory, const Word address)
 {
     Word val1 = (Word)memory[address];
     Word val2 = (Word)memory[address+1];
