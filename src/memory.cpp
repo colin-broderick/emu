@@ -19,7 +19,7 @@ std::ostream& operator<<(std::ostream& stream, Memory& memory)
         stream << "\t\t";
         for (unsigned int j = 0; j < 16; j++)
         {
-            stream << "0x" << std::hex << std::setw(2) << std::setfill('0') << (int)memory[0xff + i*16+j] << " ";
+            stream << "0x" << std::hex << std::setw(2) << std::setfill('0') << (int)memory[0x100 + i*16+j] << " ";
         }
         stream << "\n";
     }
