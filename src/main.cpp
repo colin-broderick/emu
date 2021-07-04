@@ -3,7 +3,7 @@
 int main()
 {
     System NES;
-    NES.load_example_prog(6);
+    NES.load_example_prog(7);
     NES.run();
 
     return 0;

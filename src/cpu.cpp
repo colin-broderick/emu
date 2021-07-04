@@ -494,6 +494,14 @@ void CPU::run(Memory& memory)
                     sem.wait();
                 }
                 break;
+            
+            case INSTR_6502_JMP:
+                {
+                    IP = get_word(memory);
+                    sem.wait();
+                    sem.wait();
+                }
+                break;
 
             default:
                 std::cout << "Unknown instruction: 0x" << std::hex << std::setw(2) << std::setfill('0') << (int)instruction << "\n";
