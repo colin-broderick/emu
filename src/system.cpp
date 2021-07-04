@@ -22,7 +22,7 @@ inline void System::clock_function(Semaphore* cpu_sem, unsigned int cycles)
 
 void System::load_example_prog(unsigned int which)
 {
-    switch (which % 7)
+    switch (which % 8)
     {
         case 0:
             /*  Loads values into A and stores them elsewhere in memory. */
@@ -119,6 +119,10 @@ void System::load_example_prog(unsigned int which)
                 0xa2, 0x04,             // LDA #$04
                 0x60,
                 0x00
+            };
+        case 7:     //simple test for JMP
+            memory.data = {
+                0x4c, 0x34, 0x12,       // JMP $1234
             };
     }
 }
