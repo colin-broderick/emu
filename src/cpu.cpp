@@ -515,6 +515,17 @@ void CPU::run(Memory& memory)
                 }
                 break;
 
+            case INSTR_6502_JMP_INDIRECT:
+                {
+                    Word lookup_address = get_word(memory);
+                    IP = get_word(memory, lookup_address);
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                }
+                break;
+
             default:
                 std::cout << "Unknown instruction: 0x" << std::hex << std::setw(2) << std::setfill('0') << (int)instruction << "\n";
                 return;
