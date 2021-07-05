@@ -131,7 +131,7 @@ void System::load_example_prog(unsigned int which)
             };
         case 9:     //test for AND operations
             memory.data = {
-                0x29, 0xff // AND #$00
+                0x29, 0xff // AND #$FF
             };
     }
 }
