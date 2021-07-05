@@ -126,6 +126,9 @@ class CPU
     const static Byte INSTR_6502_INC_ABSOLUTE = 0xEE;        // 6, Adds one to the value in memory, setting Z and N if required
     const static Byte INSTR_6502_INC_ABSOLUTE_X = 0xFE;      // 7, Adds one to the value in memory, setting Z and N if required
 
+    // AND - logical AND operation
+    const static Byte INSTR_6502_AND_IMMEDIATE = 0x29;      // 2, performs (accumulator AND operand) then stores in accumulator
+
     /***************************************************************************************************************************/
 
     private:

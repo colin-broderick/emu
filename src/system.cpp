@@ -22,7 +22,7 @@ inline void System::clock_function(Semaphore* cpu_sem, unsigned int cycles)
 
 void System::load_example_prog(unsigned int which)
 {
-    switch (which % 9)
+    switch (which % 10)
     {
         case 0:
             /*  Loads values into A and stores them elsewhere in memory. */
@@ -128,6 +128,10 @@ void System::load_example_prog(unsigned int which)
             memory.data = {
                 0x6c, 0x03, 0x00,       // JMP $0003
                 0xfc, 0xba
+            };
+        case 9:     //test for AND operations
+            memory.data = {
+                0x29, 0xff // AND #$FF
             };
     }
 }
