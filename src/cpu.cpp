@@ -540,6 +540,23 @@ void CPU::run(Memory& memory)
                     sem.wait();
                 }
                 break;
+            
+            case INSTR_6502_AND_IMMEDIATE:
+                {
+                    Byte operand = get_byte(memory);
+                    A = A & operand;
+                    if (A == 0)
+                    {
+                        Z = true;
+                    }
+                    if (A & 0b10000000)
+                    {
+                        N = true;
+                    }
+                    sem.wait();
+                    IP++;
+                }
+                break;
 
             default:
                 std::cout << "Unknown instruction: 0x" << std::hex << std::setw(2) << std::setfill('0') << (int)instruction << "\n";
