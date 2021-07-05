@@ -549,6 +549,40 @@ void CPU::run(Memory& memory)
                 }
                 break;
 
+            case INSTR_6502_DEC_ABSOLUTE:
+                {
+                    Word target_address = get_word(memory);
+                    memory[target_address]--;
+                    IP++;
+                    IP++;
+                    N = (memory[target_address] & 0x80);  // Set N on if sign bit of result is set.
+                    Z = (memory[target_address] == 0);    // Set Z on if result is zero.
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                }
+                break;
+
+            case INSTR_6502_DEC_ABSOLUTE_X:
+                {
+                    Word target_address = get_word(memory);
+                    target_address += X;
+                    memory[target_address]--;
+                    IP++;
+                    IP++;
+                    N = (memory[target_address] & 0x80);  // Set N on if sign bit of result is set.
+                    Z = (memory[target_address] == 0);    // Set Z on if result is zero.
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                }
+                break;
+
             case INSTR_6502_JMP_INDIRECT:
                 {
                     Word lookup_address = get_word(memory);
