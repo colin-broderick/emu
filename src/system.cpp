@@ -1,11 +1,19 @@
 #include <thread>
 
+#include <string.h>
+
 #include "system.hpp"
 
 System::System()
 {
     memory.data = {0};
 }
+
+void System::load_short_program(std::array<Byte, 128> program)
+{
+    memcpy(memory.data.data(), program.data(), 128);
+}
+
 
 inline void System::clock_function(Semaphore* cpu_sem, unsigned int cycles)
 {
