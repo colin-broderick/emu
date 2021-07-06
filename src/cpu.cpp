@@ -612,6 +612,27 @@ void CPU::run(Memory& memory)
                 }
                 break;
 
+            case INSTR_6502_AND_ZEROPAGE_X:
+                {
+                    //get address, add X, wrap if necessary
+                    Byte lookup_address = (get_byte(memory) + X) & 0xff;
+                    Byte operand = get_byte(memory, lookup_address);
+                    IP++;
+                    A = A & operand;
+                    if (A == 0)
+                    {
+                        Z = true;
+                    }
+                    if (A & 0b10000000)
+                    {
+                        N = true;
+                    }
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                }
+                break;
+
             case INSTR_6502_AND_ZEROPAGE:
                 {
                     Byte lookup_address = get_byte(memory);

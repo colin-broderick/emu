@@ -128,6 +128,7 @@ class CPU
 
     // AND - logical AND operation
     const static Byte INSTR_6502_AND_IMMEDIATE = 0x29;      // 2, performs (accumulator AND operand) then stores in accumulator
+    const static Byte INSTR_6502_AND_ZEROPAGE_X = 0x35;     // 4, performs (accumulator AND operand) then stores in accumulator
     const static Byte INSTR_6502_AND_ZEROPAGE = 0x25;       // 3, performs (accumulator AND operand) then stores in accumulator
 
     /***************************************************************************************************************************/
