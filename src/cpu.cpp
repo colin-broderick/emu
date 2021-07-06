@@ -655,6 +655,9 @@ void CPU::run(Memory& memory)
             case INSTR_6502_AND_ABSOLUTE:
                 {
                     Word lookup_address = get_word(memory);
+                    Word old_page = lookup_address & 0xFF00;
+                    lookup_address += X;
+                    Word new_page = lookup_address & 0xFF00;
                     Byte operand = get_byte(memory, lookup_address);
                     IP++;
                     A = A & operand;
@@ -669,6 +672,10 @@ void CPU::run(Memory& memory)
                     sem.wait();
                     sem.wait();
                     sem.wait();
+                    if (old_page != new_page) 
+                    {
+                        sem.wait();
+                    }
                 }
                 break;
 
