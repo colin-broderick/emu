@@ -612,6 +612,25 @@ void CPU::run(Memory& memory)
                 }
                 break;
 
+            case INSTR_6502_AND_ZEROPAGE:
+                {
+                    Byte lookup_address = get_byte(memory);
+                    Byte operand = get_byte(memory, lookup_address);
+                    IP++;
+                    A = A & operand;
+                    if (A == 0)
+                    {
+                        Z = true;
+                    }
+                    if (A & 0b10000000)
+                    {
+                        N = true;
+                    }
+                    sem.wait();
+                    sem.wait();
+                }
+                break;
+
             default:
                 std::cout << "Unknown instruction: 0x" << std::hex << std::setw(2) << std::setfill('0') << (int)instruction << "\n";
                 return;
