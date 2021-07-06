@@ -5,7 +5,7 @@
 
 #include "system.hpp"
 
-class EmulatorTest
+class MemoryTest
 {
     private:
         System nes;
@@ -13,8 +13,8 @@ class EmulatorTest
     
     public:
         std::string name;
-        EmulatorTest(const std::array<Byte, 128>& program, const std::array<Byte, 128>& expected_result, std::string name);
-        EmulatorTest(const EmulatorTest& e);
+        MemoryTest(const std::array<Byte, 128>& program, const std::array<Byte, 128>& expected_result, std::string name);
+        MemoryTest(const MemoryTest& e);
         bool run();
 };
 

@@ -8,6 +8,7 @@ class Memory;
 
 class CPU
 {
+    public:
     /********** 6502 opcodes in format: Instruction name = instruction byte // num cycles, description. ************************/
 
     // LDA - LoaD Accumulator

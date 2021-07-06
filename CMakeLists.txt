@@ -11,4 +11,4 @@ add_executable(${PROJECT_NAME} src/main.cpp src/cpu.cpp src/memory.cpp src/syste
 target_link_libraries(${PROJECT_NAME} -pthread -O3)
 
 add_executable(${PROJECT_NAME}_tests src/tests.cpp src/cpu.cpp src/memory.cpp src/system.cpp)
-target_link_libraries(${PROJECT_NAME}_tests -pthread -O3)
+target_link_libraries(${PROJECT_NAME}_tests -pthread -g)

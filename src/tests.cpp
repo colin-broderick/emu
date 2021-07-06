@@ -1,9 +1,10 @@
+#include <string.h>
 #include <vector>
 #include <iostream>
 
 #include "tests.hpp"
 
-EmulatorTest::EmulatorTest(const std::array<Byte, 128>& program, const std::array<Byte, 128>& expected_result, std::string name)
+MemoryTest::MemoryTest(const std::array<Byte, 128>& program, const std::array<Byte, 128>& expected_result, std::string name)
 {
     this->nes.load_short_program(program);
     this->name = name;
@@ -11,19 +12,17 @@ EmulatorTest::EmulatorTest(const std::array<Byte, 128>& program, const std::arra
 }
 
 /** \brief Copy constructor. */
-EmulatorTest::EmulatorTest(const EmulatorTest& other)
+MemoryTest::MemoryTest(const MemoryTest& other)
 {
     this->nes.memory.data = other.nes.memory.data;
     this->name = other.name;
     this->expected_result = other.expected_result;
 }
 
-bool EmulatorTest::run()
+bool MemoryTest::run()
 {
-    if (name == "Test3")
-        return false;
-    else
-        return true;
+    this->nes.run();
+    return !memcmp(&(this->nes.memory.data.data()[0x0300]), this->expected_result.data(), 128);
 }
 
 std::string red_text(std::string str)
@@ -38,13 +37,13 @@ std::string green_text(std::string str)
 
 int main()
 {
-    std::cout << "COMPILING TESTS" << std::endl;
-    std::cout << "====================================" << std::endl;
-    std::vector<EmulatorTest> tests;
-    tests.emplace_back(EmulatorTest{std::array<Byte, 128>{1, 2, 3, 4}, std::array<Byte, 128>{1, 2, 3, 4}, "Test1"});
-    tests.emplace_back(EmulatorTest{std::array<Byte, 128>{1, 2, 3, 4}, std::array<Byte, 128>{1, 2, 3, 4}, "Test2"});
-    tests.emplace_back(EmulatorTest{std::array<Byte, 128>{1, 2, 3, 4}, std::array<Byte, 128>{1, 2, 3, 4}, "Test3"});
-    tests.emplace_back(EmulatorTest{std::array<Byte, 128>{1, 2, 3, 4}, std::array<Byte, 128>{1, 2, 3, 4}, "Test4"});
+    std::cout << "COMPILING MEMORY TESTS" << std::endl;
+    std::cout << "================================================" << std::endl;
+    std::vector<MemoryTest> tests;
+    tests.emplace_back(MemoryTest{std::array<Byte, 128>{CPU::INSTR_6502_INC_ABSOLUTE, 0x00, 0x03}, std::array<Byte, 128>{0x01, 0x00, 0x00, 0x00}, "INC, absolute addressing, once"});
+    tests.emplace_back(MemoryTest{std::array<Byte, 128>{CPU::INSTR_6502_INC_ABSOLUTE, 0x00, 0x03}, std::array<Byte, 128>{0x01, 0x00, 0x00, 0x00}, "INC, absolute addressing, twice"});
+    tests.emplace_back(MemoryTest{std::array<Byte, 128>{CPU::INSTR_6502_INC_ABSOLUTE, 0x00, 0x03}, std::array<Byte, 128>{0x01, 0x01, 0x00, 0x00}, "Deliberately failing test"});
+    tests.emplace_back(MemoryTest{std::array<Byte, 128>{CPU::INSTR_6502_INC_ABSOLUTE, 0x00, 0x03}, std::array<Byte, 128>{0x01, 0x00, 0x00, 0x00}, "Some other test"});
 
     int tests_passed = 0;
 
@@ -62,6 +61,6 @@ int main()
         }
     }
 
-    std::cout << "====================================" << std::endl;
-    std::cout << "TESTS COMPLETED // PASSED " << tests_passed << "/" << tests.size() << std::endl;
+    std::cout << "================================================" << std::endl;
+    std::cout << "MEMORY TESTS COMPLETED  //  PASSED " << tests_passed << "/" << tests.size() << std::endl;
 }

@@ -15,12 +15,12 @@ void System::load_short_program(std::array<Byte, 128> program)
 }
 
 
-inline void System::clock_function(Semaphore* cpu_sem, unsigned int cycles)
+void System::clock_function(Semaphore* cpu_sem, unsigned int cycles, bool* run_flag)
 {
     auto time = std::chrono::system_clock::now();
     std::chrono::milliseconds interval{100};
 
-    while (cycles--)
+    while (cycles-- && *run_flag)
     {
         time += interval;
         std::this_thread::sleep_until(time);
@@ -146,7 +146,9 @@ void System::load_example_prog(unsigned int which)
 
 void System::run()
 {
-    std::thread clock_thread{clock_function, &cpu.sem, 1000};
+    bool GO = true;
+    std::thread clock_thread{clock_function, &cpu.sem, 1000, &GO};
     cpu.run(memory);
+    GO = false;
     clock_thread.join();
 }

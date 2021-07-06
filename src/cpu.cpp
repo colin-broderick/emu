@@ -5,7 +5,7 @@
 #include "memory.hpp"
 #include "semaphore.hpp"
 
-#define DEBUG 1
+#define DEBUG 0
 
 CPU::CPU()
 {
@@ -470,7 +470,6 @@ void CPU::run(Memory& memory)
                 set_byte(memory, SP, IP);
                 SP--;
                 set_byte(memory, SP, flags_as_byte());
-                std::cout << "BRK reached" << std::endl;
                 return;
 
             case INSTR_6502_JSR_ABSOLUTE:

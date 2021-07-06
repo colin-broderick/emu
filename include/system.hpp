@@ -21,7 +21,7 @@ class System
         // General --------------------------------------------------------------------------------------------------------------
         void load_short_program(std::array<Byte, 128> program);
         void load_example_prog(unsigned int which);
-        static inline void clock_function(Semaphore* cpu_sem, unsigned int cycles);
+        static inline void clock_function(Semaphore* cpu_sem, unsigned int cycles, bool* run_flag);
         void run();
 };
 
