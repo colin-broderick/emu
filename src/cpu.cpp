@@ -657,6 +657,7 @@ void CPU::run(Memory& memory)
                     Word lookup_address = get_word(memory);
                     Byte operand = get_byte(memory, lookup_address);
                     IP++;
+                    IP++;
                     A = A & operand;
                     if (A == 0)
                     {
