@@ -681,6 +681,7 @@ void CPU::run(Memory& memory)
                     Word new_page = lookup_address & 0xFF00;
                     Byte operand = get_byte(memory, lookup_address);
                     IP++;
+                    IP++;
                     A = A & operand;
                     if (A == 0)
                     {
