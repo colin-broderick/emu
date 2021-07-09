@@ -70,18 +70,19 @@ void CPU::run(Memory& memory)
         switch (instruction)
         {
             case INSTR_6502_LDA_IMMEDIATE:
-                // If the instruction is LDA, we grab the next byte and store it in the acc.
-                A = get_byte(memory);
+                {
+                    // If the instruction is LDA, we grab the next byte and store it in the acc.
+                    A = get_byte(memory);
 
-                // Set CPU flags as appropriate.
-                LDA_set_CPU_flags();
+                    // Set CPU flags as appropriate.
+                    LDA_set_CPU_flags();
 
-                // This consumes another clock cycle, so we wait here.
-                sem.wait();
+                    // This consumes another clock cycle, so we wait here.
+                    sem.wait();
 
-                // And we increment the IP again.
-                IP++;
-
+                    // And we increment the IP again.
+                    IP++;
+                }
                 break;
 
             case INSTR_6502_LDA_ZEROPAGE:
@@ -130,6 +131,98 @@ void CPU::run(Memory& memory)
                     A = get_byte(memory, data_address);
                     LDA_set_CPU_flags();
                     sem.wait();
+                }
+                break;
+
+            case INSTR_6502_LDA_ABSOLUTE_X:
+                {
+
+                    Word load_from_address = get_word(memory);
+                    Byte page1 = load_from_address >> 8;
+                    load_from_address += X;
+                    Byte page2 = load_from_address >> 8;
+                    
+                    IP++;
+                    IP++;
+
+                    A = get_byte(memory, load_from_address);
+
+                    LDA_set_CPU_flags();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    if (page1 != page2)
+                    {
+                        sem.wait();
+                    }
+                }
+                break;
+
+            case INSTR_6502_LDA_ABSOLUTE_Y:
+                {
+
+                    Word load_from_address = get_word(memory);
+                    Byte page1 = load_from_address >> 8;
+                    load_from_address += Y;
+                    Byte page2 = load_from_address >> 8;
+                    
+                    IP++;
+                    IP++;
+
+                    A = get_byte(memory, load_from_address);
+
+                    LDA_set_CPU_flags();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    if (page1 != page2)
+                    {
+                        sem.wait();
+                    }
+                }
+                break;
+            
+            case INSTR_6502_LDA_INDIRECT_X:
+                {
+                    // Read next byte to get indirect address and jump over it
+                    Byte indirect_address = get_byte(memory) + X;
+                    sem.wait();
+                    IP++;
+
+                    // Get the data from other address
+                    Word target_address = get_word(memory, indirect_address);
+                    sem.wait();
+
+                    // Get the data to be ORed with A.
+                    A = get_byte(memory, target_address);
+                    sem.wait();
+
+                    LDA_set_CPU_flags();
+                    sem.wait();
+                    sem.wait();
+                }
+                break;
+
+            case INSTR_6502_LDA_INDIRECT_Y:
+                {
+                    Byte indirect_address = get_byte(memory);
+                    IP++;
+
+                    Word address = get_word(memory, indirect_address);
+                    Byte page1 = address >> 8;
+                    address += Y;
+                    Byte page2 = address >> 8;
+
+                    LDA_set_CPU_flags();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+
+                    if (page1 != page2)
+                    {
+                        sem.wait();
+                    }
                 }
                 break;
 
@@ -369,27 +462,6 @@ void CPU::run(Memory& memory)
                     sem.wait();
 
                     ORA_set_CPU_flags();
-                    sem.wait();
-                }
-                break;
-
-            case INSTR_6502_LDA_INDIRECT_X:
-                {
-                    // Read next byte to get indirect address and jump over it
-                    Byte indirect_address = get_byte(memory) + X;
-                    sem.wait();
-                    IP++;
-
-                    // Get the data from other address
-                    Word target_address = get_word(memory, indirect_address);
-                    sem.wait();
-
-                    // Get the data to be ORed with A.
-                    A = get_byte(memory, target_address);
-                    sem.wait();
-
-                    LDA_set_CPU_flags();
-                    sem.wait();
                     sem.wait();
                 }
                 break;
