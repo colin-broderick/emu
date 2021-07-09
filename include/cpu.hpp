@@ -16,11 +16,11 @@ class CPU
     const static Byte INSTR_6502_LDA_IMMEDIATE = 0xA9;       // 2, Load next byte into A.
     const static Byte INSTR_6502_LDA_ZEROPAGE = 0xA5;        // 3, Load from zero page address in next byte into A.
     const static Byte INSTR_6502_LDA_ZEROPAGE_X = 0xB5;      // 4, Load from (zero page addres + X) in next byte into A.
-    const static Byte INSTR_6502_LDA_ABSOLUTE = 0xAD;        // 5, Load from a 16-bit address, contained in next two bytes.
-    const static Byte INSTR_6502_LDA_ABSOLUTE_X = 0xBD;
-    const static Byte INSTR_6502_LDA_ABSOLUTE_Y = 0xB9;
-    const static Byte INSTR_6502_LDA_INDIRECT_X = 0xA1;
-    const static Byte INSTR_6502_LDA_INDIRECT_Y = 0xB1;
+    const static Byte INSTR_6502_LDA_ABSOLUTE = 0xAD;        // 4, Load from a 16-bit address, contained in next two bytes.
+    const static Byte INSTR_6502_LDA_ABSOLUTE_X = 0xBD;      // 4+
+    const static Byte INSTR_6502_LDA_ABSOLUTE_Y = 0xB9;      // 4+
+    const static Byte INSTR_6502_LDA_INDIRECT_X = 0xA1;      // 6
+    const static Byte INSTR_6502_LDA_INDIRECT_Y = 0xB1;      // 5+
 
     // LDX - LoaD X register
     // Set Z if X == 0.
