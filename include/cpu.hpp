@@ -164,6 +164,7 @@ class CPU
         Word get_word(Memory& memory);
         Word get_word(Memory& memory, const Byte address);
         Word get_word(Memory& memory, const Word address);
+        Word get_word_zpg_wrap(Memory& memory, const Byte address);
 
         Byte flags_as_byte();
 

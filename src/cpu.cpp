@@ -190,7 +190,7 @@ void CPU::run(Memory& memory)
                     IP++;
 
                     // Get the data from other address
-                    Word target_address = get_word(memory, indirect_address);
+                    Word target_address = get_word_zpg_wrap(memory, indirect_address);
                     sem.wait();
 
                     // Get the data to be ORed with A.
@@ -810,7 +810,7 @@ Word CPU::get_word(Memory& memory)
 Word CPU::get_word(Memory& memory, const Byte address)
 {
     Word val1 = (Word)memory[address];
-    Word val2 = (Word)memory[address+1];
+    Word val2 = (Word)memory[(Word)address+1];
     return (val2 << 8) | val1;
 }
 
@@ -818,6 +818,13 @@ Word CPU::get_word(Memory& memory, const Word address)
 {
     Word val1 = (Word)memory[address];
     Word val2 = (Word)memory[address+1];
+    return (val2 << 8) | val1;
+}
+
+Word CPU::get_word_zpg_wrap(Memory& memory, const Byte address)
+{
+    Word val1 = (Word)memory[address];
+    Word val2 = (Word)memory[(Word)address+1];
     return (val2 << 8) | val1;
 }
 
