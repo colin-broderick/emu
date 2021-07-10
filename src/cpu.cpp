@@ -824,7 +824,7 @@ Word CPU::get_word(Memory& memory, const Word address)
 Word CPU::get_word_zpg_wrap(Memory& memory, const Byte address)
 {
     Word val1 = (Word)memory[address];
-    Word val2 = (Word)memory[(Word)address+1];
+    Word val2 = (Word)memory[address+1];   // This wraps automatically since address is a Byte
     return (val2 << 8) | val1;
 }
 
