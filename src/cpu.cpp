@@ -781,6 +781,7 @@ void CPU::run(Memory& memory)
 
                     //get target address from indirect_address data and next on zero page
                     Word target_address = get_word_zpg_wrap(memory, indirect_address);
+                    std::cout << "target address: "  << (Word)target_address << "\n";
 
                     // get data from target address
                     Byte operand = get_byte(memory, target_address);
