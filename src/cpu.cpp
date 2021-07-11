@@ -830,6 +830,38 @@ void CPU::run(Memory& memory)
                     sem.wait();
                 }
                 break;
+            
+            case INSTR_6502_AND_INDIRECT_Y:
+                {
+                    Byte indirect_address = get_byte(memory);
+                    IP++;
+                    Word target_address = get_word(memory, indirect_address);
+                    Byte page1 = target_address >> 8;
+                    target_address += Y;
+                    Byte page2 = target_address >> 8;
+
+                    Byte operand = get_byte(memory, target_address);
+
+                    //complete operation
+                    A = A & operand;
+                    if (A == 0)
+                    {
+                        Z = true;
+                    }
+                    if (A & 0b10000000)
+                    {
+                        N = true;
+                    }
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    if (page1 != page2)
+                    {
+                        sem.wait();
+                    }
+                }
+                break;
 
             default:
                 std::cout << "Unknown instruction: 0x" << std::hex << std::setw(2) << std::setfill('0') << (int)instruction << "\n";
