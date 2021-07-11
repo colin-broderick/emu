@@ -141,8 +141,8 @@ void System::load_example_prog(unsigned int which)
             //memory[0x00fe] = 0x04;
             memory[0x00ff] = 0x03;
             memory[0x0100] = 0x04;
-            memory[0x0403] = 0xc0;
-            //memory[0x2103] = 0xcc;
+            //memory[0x0403] = 0xc0;
+            memory[0x2103] = 0x0c;
     }
 }
 
