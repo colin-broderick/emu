@@ -132,6 +132,7 @@ class CPU
     const static Byte INSTR_6502_AND_ZEROPAGE = 0x25;       // 3, performs (accumulator AND operand) then stores in accumulator
     const static Byte INSTR_6502_AND_ABSOLUTE = 0x2d;       // 4, performs (accumulator AND operand) then stores in accumulator
     const static Byte INSTR_6502_AND_ABSOLUTE_X = 0x3d;       // 4 (+1 if page boundary crossed), performs (accumulator AND operand) then stores in accumulator
+    const static Byte INSTR_6502_AND_INDIRECT_X = 0x21;       // 6 performs (accumulator AND operand) then stores in accumulator
 
     /***************************************************************************************************************************/
 
