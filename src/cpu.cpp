@@ -772,6 +772,36 @@ void CPU::run(Memory& memory)
                     }
                 }
                 break;
+            
+            case INSTR_6502_AND_INDIRECT_X:
+                {
+                    // read next byte and add X without carry
+                    Byte indirect_address = get_byte(memory) + X;
+                    IP++;
+
+                    //get target address from indirect_address data and next on zero page
+                    Word target_address = get_word_zpg_wrap(memory, indirect_address);
+
+                    // get data from target address
+                    Byte operand = get_byte(memory, target_address);
+
+                    //complete operation
+                    A = A & operand;
+                    if (A == 0)
+                    {
+                        Z = true;
+                    }
+                    if (A & 0b10000000)
+                    {
+                        N = true;
+                    }
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                }
+                break;
 
             default:
                 std::cout << "Unknown instruction: 0x" << std::hex << std::setw(2) << std::setfill('0') << (int)instruction << "\n";
