@@ -773,6 +773,34 @@ void CPU::run(Memory& memory)
                 }
                 break;
             
+            case INSTR_6502_AND_ABSOLUTE_Y:
+                {
+                    Word lookup_address = get_word(memory);
+                    Word old_page = lookup_address & 0xFF00;
+                    lookup_address += Y;
+                    Word new_page = lookup_address & 0xFF00;
+                    Byte operand = get_byte(memory, lookup_address);
+                    IP++;
+                    IP++;
+                    A = A & operand;
+                    if (A == 0)
+                    {
+                        Z = true;
+                    }
+                    if (A & 0b10000000)
+                    {
+                        N = true;
+                    }
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    if (old_page != new_page) 
+                    {
+                        sem.wait();
+                    }
+                }
+                break;
+            
             case INSTR_6502_AND_INDIRECT_X:
                 {
                     // read next byte and add X without carry
