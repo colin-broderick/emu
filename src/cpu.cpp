@@ -921,7 +921,7 @@ Word CPU::get_word_zpg_wrap(Memory& memory, const Byte address)
 Byte CPU::get_data_indexed_indirect(Memory& memory, const Byte index)
 {
     // read next byte and add X without carry
-    Byte indirect_address = get_byte(memory) + X;
+    Byte indirect_address = get_byte(memory) + index;
 
     //get target address from indirect_address data and next on zero page
     Word target_address = get_word_zpg_wrap(memory, indirect_address);
