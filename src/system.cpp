@@ -133,15 +133,15 @@ void System::load_example_prog(unsigned int which)
             memory.data = {
                 0x3d, 0x00 //AND $0000, X
             };
-        case 10: //test for AND with indirect x
+        case 10: //test for AND with indirect y
             memory.data = {
-                0x21, 0x33, //AND ($33, X)
+                0x31, 0xff, //AND ($33, X)
                 0x00
             };
-            //memory[0x00fe] = 0x04;
-            memory[0x00ff] = 0x03;
-            memory[0x0100] = 0x04;
-            //memory[0x0403] = 0xc0;
+            memory[0x0100] = 0x44;
+            memory[0x00fd] = 0x0c;
+            memory[0x31cc] = 0xc0;
+            memory[0x44cc] = 0x0c;
             memory[0x2103] = 0x0c;
     }
 }

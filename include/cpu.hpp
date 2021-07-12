@@ -134,6 +134,7 @@ class CPU
     const static Byte INSTR_6502_AND_ABSOLUTE_X = 0x3d;       // 4 (+1 if page boundary crossed), performs (accumulator AND operand) then stores in accumulator
     const static Byte INSTR_6502_AND_ABSOLUTE_Y = 0x39;       // 4 (+1 if page boundary crossed), performs (accumulator AND operand) then stores in accumulator
     const static Byte INSTR_6502_AND_INDIRECT_X = 0x21;       // 6 performs (accumulator AND operand) then stores in accumulator
+    const static Byte INSTR_6502_AND_INDIRECT_Y = 0x31;       // 5 (+1 if page boundary crossed), performs (accumulator AND operand) then stores in accumulator
 
     /***************************************************************************************************************************/
 
