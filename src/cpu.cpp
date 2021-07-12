@@ -835,7 +835,7 @@ void CPU::run(Memory& memory)
                 {
                     Byte indirect_address = get_byte(memory);
                     IP++;
-                    Word target_address = get_word(memory, indirect_address);
+                    Word target_address = get_word_zpg_wrap(memory, indirect_address);
                     Byte page1 = target_address >> 8;
                     target_address += Y;
                     Byte page2 = target_address >> 8;
