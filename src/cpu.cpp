@@ -911,6 +911,24 @@ Word CPU::get_word(Memory& memory, const Word address)
     return (val2 << 8) | val1;
 }
 
+/** \brief Fetches a byte using relative addressing mode.
+ * \param memory A reference to a memory array object.
+ * \return A Byte from memory.
+ */
+Byte CPU::get_data_relative(Memory& memory)
+{
+    return get_data_immediate(memory);
+}
+
+/** \brief Fetches a byte using immediate addressing mode.
+ * \param memory A reference to a memory array object.
+ * \return A Byte from memory.
+ */
+Byte CPU::get_data_immediate(Memory& memory)
+{
+    return get_byte(memory);
+}
+
 Word CPU::get_word_zpg_wrap(Memory& memory, const Byte address)
 {
     Word val1 = (Word)memory[address % 256];
