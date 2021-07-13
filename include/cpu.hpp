@@ -171,7 +171,8 @@ class CPU
 
         Byte get_data_relative(Memory& memory);
         Byte get_data_immediate(Memory& memory);
-        
+        Byte get_data_indexed_indirect(Memory& memory, const Byte index);   //(Indirect,X) uses IP as indirect address
+
         Byte flags_as_byte();
 
         // General --------------------------------------------------------------------------------------------------------------
