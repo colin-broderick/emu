@@ -169,6 +169,8 @@ class CPU
         Word get_word(Memory& memory, const Word address);
         Word get_word_zpg_wrap(Memory& memory, const Byte address);
 
+        Byte get_data_relative(Memory& memory);
+        Byte get_data_immediate(Memory& memory);
         Byte get_data_indexed_indirect(Memory& memory, const Byte index);   //(Indirect,X) uses IP as indirect address
 
         Byte flags_as_byte();
