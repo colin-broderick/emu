@@ -948,6 +948,18 @@ Byte CPU::get_data_indexed_indirect(Memory& memory, const Byte index)
     return get_byte(memory, target_address);
 }
 
+Byte CPU::get_data_indirect_indexed(Memory& memory, const Byte index)
+{
+    //read next byte and add index without carry
+    Byte indirect_address = get_byte(memory);
+
+    //get target address from indirect_address data and next on zero page and add index
+    Word target_address = get_word_zpg_wrap(memory, indirect_address) + index;
+
+    //get data from target address and return
+    return get_byte(memory, target_address);
+}
+
 Byte CPU::flags_as_byte()
 {
     return (N << 7) | (V << 6) | (true << 5) | (B << 4) | (D << 3) | (I << 2) | (Z << 1) | (C << 1);
