@@ -911,6 +911,14 @@ Word CPU::get_word(Memory& memory, const Word address)
     return (val2 << 8) | val1;
 }
 
+Byte CPU::get_data_indexed_absolute(Memory& memory, const Byte index)
+{
+    //get address from next two bytes and add index
+    Word address = get_word(memory) + index;
+    //return data at address
+    return get_byte(memory, address);
+}
+
 /** \brief Fetches a byte using relative addressing mode.
  * \param memory A reference to a memory array object.
  * \return A Byte from memory.
