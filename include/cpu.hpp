@@ -171,8 +171,8 @@ class CPU
 
         Byte get_data_relative(Memory& memory);
         Byte get_data_immediate(Memory& memory);
-        Byte get_data_zero_page_x(Memory& memory);
-        Byte get_data_zero_page_y(Memory& memory);
+        Byte get_data_zero_page(Memory& memory);
+        Byte get_data_zero_page(Memory& memory, const Byte index);
         Byte get_data_indexed_indirect(Memory& memory, const Byte index);   //(Indirect,X) uses IP as indirect address
         Byte get_data_indirect_indexed(Memory& memory, const Byte index);   //(Indirect),Y uses IP as indirect address
 
