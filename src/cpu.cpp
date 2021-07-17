@@ -403,25 +403,12 @@ void CPU::run(Memory& memory)
                 {
                     // Remember the starting page so we know if we've moved to a new page.
                     Byte current_page = IP >> 8;
-                    
-                    bool jump = !Z;
                     sem.wait();
 
-                    if (jump)
+                    if (!Z)
                     {
                         Byte dist = get_byte(memory);
-                        if (dist & 0x80)
-                        {
-                            // If jump is negative get the two's complement and subtract the result.
-                            dist = ~dist;
-                            dist += 1;
-                            IP = IP - dist;
-                        }
-                        else
-                        {
-                            // If the jump is positive, do the jump.
-                            IP = IP + dist;
-                        }
+                        branch_relative(dist);
                         sem.wait();
                     }
                     IP++;
@@ -433,7 +420,162 @@ void CPU::run(Memory& memory)
                         sem.wait();
                         sem.wait();
                     }
+                }
+                break;
 
+            case INSTR_6502_BEQ_RELATIVE:
+                {
+                    // Remember the starting page so we know if we've moved to a new page.
+                    Byte current_page = IP >> 8;
+                    sem.wait();
+
+                    if (Z)
+                    {
+                        Byte dist = get_byte(memory);
+                        branch_relative(dist);
+                        sem.wait();
+                    }
+                    IP++;
+
+                    // This should take two additional clock cycles if the branch leads to a new page.
+                    Byte new_page = IP >> 8;
+                    if (current_page != new_page)
+                    {
+                        sem.wait();
+                        sem.wait();
+                    }
+                }
+                break;
+
+            case INSTR_6502_BMI_RELATIVE:
+                {
+                    Byte current_page = IP >> 8;
+                    sem.wait();
+
+                    if (N)
+                    {
+                        Byte dist = get_data_relative(memory);
+                        branch_relative(dist);
+                        sem.wait();
+                    }
+                    IP++;
+
+                    Byte new_page = IP >> 8;
+                    if (current_page != new_page)
+                    {
+                        sem.wait();
+                        sem.wait();
+                    }
+                }
+                break;
+
+            case INSTR_6502_BPL_RELATIVE:
+                {
+                    Byte current_page = IP >> 8;
+                    sem.wait();
+
+                    if (!N)
+                    {
+                        Byte dist = get_data_relative(memory);
+                        branch_relative(dist);
+                        sem.wait();
+                    }
+                    IP++;
+
+                    Byte new_page = IP >> 8;
+                    if (current_page != new_page)
+                    {
+                        sem.wait();
+                        sem.wait();
+                    }
+                }
+                break;
+            
+            case INSTR_6502_BVC_RELATIVE:
+                {
+                    Byte current_page = IP >> 8;
+                    sem.wait();
+
+                    if (!V)
+                    {
+                        Byte dist = get_data_relative(memory);
+                        branch_relative(dist);
+                        sem.wait();
+                    }
+                    IP++;
+
+                    Byte new_page = IP >> 8;
+                    if (current_page != new_page)
+                    {
+                        sem.wait();
+                        sem.wait();
+                    }
+                }
+                break;
+
+            case INSTR_6502_BVS_RELATIVE:
+                {
+                    Byte current_page = IP >> 8;
+                    sem.wait();
+
+                    if (V)
+                    {
+                        Byte dist = get_data_relative(memory);
+                        branch_relative(dist);
+                        sem.wait();
+                    }
+                    IP++;
+
+                    Byte new_page = IP >> 8;
+                    if (current_page != new_page)
+                    {
+                        sem.wait();
+                        sem.wait();
+                    }
+                }
+                break;
+
+            case INSTR_6502_BCC_RELATIVE:
+                {
+                    Byte current_page = IP >> 8;
+                    sem.wait();
+
+                    if (!C)
+                    {
+                        Byte dist = get_data_relative(memory);
+                        branch_relative(dist);
+                        sem.wait();
+                    }
+                    IP++;
+
+                    Byte new_page = IP >> 8;
+                    if (current_page != new_page)
+                    {
+                        sem.wait();
+                        sem.wait();
+                    }
+                }
+                break;
+
+            case INSTR_6502_BCS_RELATIVE:
+                {
+                    Byte current_page = IP >> 8;
+                    sem.wait();
+
+                    if (C)
+                    {
+                        Byte dist = get_data_relative(memory);
+                        branch_relative(dist);
+                        sem.wait();
+                    }
+                    IP++;
+
+                    Byte new_page = IP >> 8;
+                    if (current_page != new_page)
+                    {
+                        sem.wait();
+                        sem.wait();
+                    }
                 }
                 break;
 
@@ -988,6 +1130,26 @@ Byte CPU::get_data_indirect_indexed(Memory& memory, const Byte index)
     //get data from target address and return
     return get_byte(memory, target_address);
 }
+
+/** \brief Adds the signed value distance to the IP.
+ * \param distance Signed value defining the distance to jump in memory.
+ */
+void CPU::branch_relative(Byte distance)
+{
+    if (distance & 0x80)
+    {
+        // If jump is negative get the two's complement and subtract the result.
+        distance = ~distance;
+        distance += 1;
+        IP = IP - distance;
+    }
+    else
+    {
+        // If the jump is positive, do the jump.
+        IP = IP + distance;
+    }
+}
+
 
 Byte CPU::flags_as_byte()
 {

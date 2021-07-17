@@ -73,7 +73,14 @@ class CPU
     const static Byte INSTR_6502_CPY_IMMEDIATE = 0xC0;       // 2, As CPX, but for Y register.
 
     // BNE - Branch if Not Equal
+    const static Byte INSTR_6502_BEQ_RELATIVE = 0xF0;        // 2 (+1 if branch, +2 if new page), branch if the Z flag is set.
     const static Byte INSTR_6502_BNE_RELATIVE = 0xD0;        // 2 (+1 if branch, +2 if new page), branch if the Z flag is not set.
+    const static Byte INSTR_6502_BMI_RELATIVE = 0x30;        // 2 (+1 if branch, +2 if new page), branch if the N flag is set.
+    const static Byte INSTR_6502_BPL_RELATIVE = 0x10;        // 2 (+1 if branch, +2 if new page), branch if the N flag is not set.
+    const static Byte INSTR_6502_BVS_RELATIVE = 0x70;        // 2 (+1 if branch, +2 if new page), branch if the V flag is set.
+    const static Byte INSTR_6502_BVC_RELATIVE = 0x50;        // 2 (+1 if branch, +2 if new page), branch if the V flag is not set.
+    const static Byte INSTR_6502_BCS_RELATIVE = 0xB0;        // 2 (+1 if branch, +2 if new page), branch if the C flag is set.
+    const static Byte INSTR_6502_BCC_RELATIVE = 0x90;        // 2 (+1 if branch, +2 if new page), branch if the C flag is not set.
 
     // SED - SEt Decimal flag
     const static Byte INSTR_6502_SED = 0xF8;                 // 2, Set D flag to on.
@@ -145,6 +152,8 @@ class CPU
         void TAX_set_CPU_flags();
         void TXA_set_CPU_flags();
         void ORA_set_CPU_flags();
+
+        void branch_relative(Byte distance);
 
     public:
         // Attributes -----------------------------------------------------------------------------------------------------------
