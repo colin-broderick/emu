@@ -937,6 +937,27 @@ Byte CPU::get_data_immediate(Memory& memory)
     return get_byte(memory);
 }
 
+/** \brief Fetches a byte using zpg addressing mode.
+ * \param memory A reference to a memory array object.
+ * \return A Byte from memory.
+ */
+Byte CPU::get_data_zero_page(Memory& memory)
+{
+    Byte data_address = get_byte(memory);
+    return get_byte(memory, data_address);
+}
+
+/** \brief Fetches a byte using zpg addressing mode with an index, typically X or Y register.
+ * \param memory A reference to a memory array object.
+ * \param index An index into a memory region.
+ * \return A Byte from memory.
+ */
+Byte CPU::get_data_zero_page(Memory& memory, const Byte index)
+{
+    Byte data_address = get_byte(memory) + index;
+    return get_byte(memory, data_address);
+}
+
 Word CPU::get_word_zpg_wrap(Memory& memory, const Byte address)
 {
     Word val1 = (Word)memory[address % 256];
