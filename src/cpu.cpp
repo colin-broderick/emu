@@ -21,6 +21,26 @@ void CPU::LDA_set_CPU_flags()
     Z = (A == 0);
 }
 
+/** \brief Sets appropriate flags after performing a CMP operation.
+ * \param data_from_memory The flags to set depend on the data read from memory to do the comparison.
+ */
+void CPU::CMP_set_CPU_flags(Byte data_from_memory)
+{
+    Word difference = (Word)A - (Word)data_from_memory;
+    if (A >= data_from_memory)
+    {
+        C = true;
+    }
+    if (A == data_from_memory)
+    {
+        Z = true;
+    }
+    if (difference & 0x80)
+    {
+        N = true;
+    }
+}
+
 /** \brief Sets appropriuate flags after performing ORA operation. */
 void CPU::ORA_set_CPU_flags()
 {
@@ -170,12 +190,112 @@ void CPU::run(Memory& memory)
                 break;
 
             case INSTR_6502_LDY_IMMEDIATE:
+                Y = get_byte(memory);
+                IP++;
+                LDY_set_CPU_flags();
+                sem.wait();
+                break;
+
+            case INSTR_6502_CMP_IMMEDIATE:
                 {
-                    // If the instruction is LDA, we grab the next byte and store it in the acc.
-                    Y = get_byte(memory);
-                    LDY_set_CPU_flags();
-                    sem.wait();
+                    Byte data = get_data_immediate(memory);
                     IP++;
+                    CMP_set_CPU_flags(data);
+                    sem.wait();
+                }
+                break;
+
+            case INSTR_6502_CMP_ZERO_PAGE:
+                {
+                    Byte data = get_data_zero_page(memory);
+                    IP++;
+                    CMP_set_CPU_flags(data);
+                    sem.wait();
+                    sem.wait();
+                }
+                break;
+
+            case INSTR_6502_CMP_ZERO_PAGE_X:
+                {
+                    Byte data = get_data_zero_page(memory, X);
+                    IP++;
+                    CMP_set_CPU_flags(data);
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                }
+                break;
+
+            case INSTR_6502_CMP_ABSOLUTE:
+                {
+                    Byte data = get_data_absolute(memory);
+                    IP++;
+                    CMP_set_CPU_flags(data);
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                }
+                break;
+
+            case INSTR_6502_CMP_ABSOLUTE_X:
+                {
+                    Byte data = get_data_absolute(memory, X);
+                    IP++;
+                    CMP_set_CPU_flags(data);
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    if (page_crossed)
+                    {
+                        page_crossed = false;
+                        sem.wait();
+                    }
+                }
+                break;
+
+            case INSTR_6502_CMP_ABSOLUTE_Y:
+                {
+                    Byte data = get_data_absolute(memory, Y);
+                    IP++;
+                    CMP_set_CPU_flags(data);
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    if (page_crossed)
+                    {
+                        page_crossed = false;
+                        sem.wait();
+                    }
+                }
+                break;
+
+            case INSTR_6502_CMP_INDIRECT_X:
+                {
+                    Byte data = get_data_indexed_indirect(memory, X);
+                    IP++;
+                    CMP_set_CPU_flags(data);
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                }
+                break;
+
+            case INSTR_6502_CMP_INDIRECT_Y:
+                {
+                    Byte data = get_data_indirect_indexed(memory, Y);
+                    IP++;
+                    CMP_set_CPU_flags(data);
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    if (page_crossed)
+                    {
+                        page_crossed = false;
+                        sem.wait();
+                    }
                 }
                 break;
 

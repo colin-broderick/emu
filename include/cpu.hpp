@@ -31,6 +31,15 @@ class CPU
     const static Byte INSTR_6502_LDX_ABSOLUTE = 0xAE;
     const static Byte INSTR_6502_LDX_ABOLUTE_Y = 0xBE;
 
+    const static Byte INSTR_6502_CMP_IMMEDIATE = 0xC9;       // 2
+    const static Byte INSTR_6502_CMP_ZERO_PAGE = 0xC5;       // 3
+    const static Byte INSTR_6502_CMP_ZERO_PAGE_X = 0xD5;     // 4
+    const static Byte INSTR_6502_CMP_ABSOLUTE = 0xCD;        // 4
+    const static Byte INSTR_6502_CMP_ABSOLUTE_X = 0xDD;      // 4+
+    const static Byte INSTR_6502_CMP_ABSOLUTE_Y = 0xD9;      // 4+
+    const static Byte INSTR_6502_CMP_INDIRECT_X = 0xC1;      // 6
+    const static Byte INSTR_6502_CMP_INDIRECT_Y = 0xD1;      // 5+
+
     // LDY - LoaD Y register
     const static Byte INSTR_6502_LDY_IMMEDIATE = 0xA0;       // 2, Load byte from next memory location into Y.
 
@@ -159,6 +168,7 @@ class CPU
 
     private:
         void LDA_set_CPU_flags();
+        void CMP_set_CPU_flags(Byte result_of_comparison);
         void LDX_set_CPU_flags();
         void LDY_set_CPU_flags();
         void TAX_set_CPU_flags();
