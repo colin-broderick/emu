@@ -1,5 +1,6 @@
 #include "system.hpp"
 
+/** \brief Application entry point. Creates a NES system and executes a loaded program. */
 int main(int argc, char* argv[])
 {
     // Check whether ROM file name is provided, and quit if not.

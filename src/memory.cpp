@@ -2,11 +2,17 @@
 
 #include "memory.hpp"
 
+/** \brief Constructor for memory object. Set all bytes to zero. */
 Memory::Memory()
 {
     data = {0};
 }
 
+/** \brief Prints summary of memory to an iostream.
+ * \param stream Reference to iostream to which to print summary.
+ * \param memory Reference to memory object.
+ * \return Reference to iostream which was printed to.
+ */
 std::ostream& operator<<(std::ostream& stream, Memory& memory)
 {
     stream << "Program:\t\t\t\t\t\t\t\t\t\t\tStack:\n";
@@ -26,6 +32,10 @@ std::ostream& operator<<(std::ostream& stream, Memory& memory)
     return stream;
 }
 
+/** \brief Memory indexing operator.
+ * \param index The position of the byte in memory to be read.
+ * \return A reference to the particular byte to be read.
+ */
 Byte& Memory::operator[](int index)
 {
     std::lock_guard<std::mutex> lock{mem_lock};

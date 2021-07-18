@@ -4,11 +4,12 @@
 
 #include "system.hpp"
 
+/** \brief Constructor for the NES system. */
 System::System()
 {
-    memory.data = {0};
 }
 
+/** \brief DEPRECATAED, REMOVE. Timer function. */
 inline void System::clock_function(Semaphore* cpu_sem, unsigned int cycles)
 {
     auto time = std::chrono::system_clock::now();
@@ -36,6 +37,9 @@ bool System::load_rom(const std::string& filename)
     return true;
 }
 
+/** \brief Load an example program for testing purposes.
+ * \param which Selector for the program to be loaded.
+ */
 void System::load_example_prog(unsigned int which)
 {
     switch (which % 11)
@@ -162,6 +166,7 @@ void System::load_example_prog(unsigned int which)
     }
 }
 
+/** \brief Run the loaded program until it exits. */
 void System::run()
 {
     std::thread clock_thread{clock_function, &cpu.sem, 1000};
