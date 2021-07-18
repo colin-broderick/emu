@@ -1,4 +1,6 @@
 #include <thread>
+#include <algorithm>
+#include <cstring>
 
 #include "system.hpp"
 
@@ -18,6 +20,20 @@ inline void System::clock_function(Semaphore* cpu_sem, unsigned int cycles)
         std::this_thread::sleep_until(time);
         cpu_sem->notify();
     }
+}
+
+/** \brief Load a standard ROM file into system memory.
+ * \param filename The name of the ROM file.
+ * \return bool true if load successful, otherwise bool false. TODO
+ */
+bool System::load_rom(const std::string& filename)
+{
+    std::ifstream input_file(filename, std::ios::binary);
+    char buf[0xffff];
+    input_file.read(buf, 0xFFFF);
+    Byte* buf2 = (Byte*)buf;
+    std::memcpy(memory.data.data(), buf2, 0xFFFF);
+    return true;
 }
 
 void System::load_example_prog(unsigned int which)
