@@ -7,45 +7,55 @@
 
 #define DEBUG 1
 
+/** \brief CPU constructor; sets initial configuration including IP, SP, flags, etc. */
 CPU::CPU()
 {
     IP = 0x0000;
     SP = 0x01FF;
 }
 
+/** \brief Sets appropriate flags after performing LDA operations. */
 void CPU::LDA_set_CPU_flags()
 {
     N = (A & 0b10000000);
     Z = (A == 0);
 }
 
+/** \brief Sets appropriuate flags after performing ORA operation. */
 void CPU::ORA_set_CPU_flags()
 {
     LDA_set_CPU_flags();
 }
 
+/** \brief Sets appropriate flags after performing LDX operations.. */
 void CPU::LDX_set_CPU_flags()
 {
     N = (X & 0b10000000);
     Z = (X == 0);
 }
 
+/** \brief Sets appropriate flags after performing LDY operations. */
 void CPU::LDY_set_CPU_flags()
 {
     N = (Y & 0b10000000);
     Z = (Y == 0);
 }
 
+/** \brief Sets appropriate flags after performing TAX operation. */
 void CPU::TAX_set_CPU_flags()
 {
     LDX_set_CPU_flags();
 }
 
+/** \brief Sets appropriate flags after performing TXA operation. */
 void CPU::TXA_set_CPU_flags()
 {
     LDA_set_CPU_flags();
 }
 
+/** \brief Runs the loaded program while CPU cycles are available to spend.
+ * \param memory A reference to the main memory of the system. The CPU reads and writes this memory.
+ */
 void CPU::run(Memory& memory)
 {
     while (true)
@@ -1061,26 +1071,49 @@ void CPU::run(Memory& memory)
     }
 }
 
+/** \brief Sets the value of a byte in memory, addressed by a full word.
+ * \param memory Reference to system memory.
+ * \param address The 16-bit address of the memory location to write to.
+ * \param value The 8-bit value to write into memory.
+ */
 void CPU::set_byte(Memory& memory, Word address, Byte value)
 {
     memory[address] = value;
 }
 
+/** \brief Gets a byte from memory, addressed by the current instruction pointer.
+ * \param memory Reference to system memory.
+ * \return A byte from memory.
+ */
 Byte CPU::get_byte(Memory& memory)
 {
     return memory[IP];
 }
 
+/** \brief Gets a byte from the zero page in memory, from a specified 8-bit address.
+ * \param memory Reference to system memory.
+ * \param address The address in the zero page from which to fetch data.
+ * \return 8-bit value from specified memory location.
+ */
 Byte CPU::get_byte(Memory& memory, const Byte address)
 {
     return memory[address];
 }
 
+/** \brief Gets a byte from system memory.
+ * \param memory Reference to system memory.
+ * \param address A full 16-bit address from which to getch data.
+ * \return 8-bit value from memory.
+ */
 Byte CPU::get_byte(Memory& memory, const Word address)
 {
     return memory[address];
 }
 
+/** \brief Gets a full word from memory, addressed by the current instruction pointer.
+ * \param memory Reference to system memory.
+ * \return 16-bit value from memory.
+ */
 Word CPU::get_word(Memory& memory)
 {
     Word val1 = (Word)memory[IP];
@@ -1088,6 +1121,11 @@ Word CPU::get_word(Memory& memory)
     return (val2 << 8) | val1;
 }
 
+/** \brief Gets a full word from the zero page in memory.
+ * \param memory Reference to system memory.
+ * \param address 8-bit address in memory, from which to fetch data.
+ * \return 16-bit value from specified memory location.
+ */
 Word CPU::get_word(Memory& memory, const Byte address)
 {
     Word val1 = (Word)memory[address];
@@ -1095,6 +1133,11 @@ Word CPU::get_word(Memory& memory, const Byte address)
     return (val2 << 8) | val1;
 }
 
+/** \brief Gets a full word from anywhere in memory.
+ * \param memory Reference to system memory.
+ * \param address 16-bit address from which to fetch data.
+ * \return 16-bit value from memory.
+ */
 Word CPU::get_word(Memory& memory, const Word address)
 {
     Word val1 = (Word)memory[address];
@@ -1102,6 +1145,11 @@ Word CPU::get_word(Memory& memory, const Word address)
     return (val2 << 8) | val1;
 }
 
+/** \brief Get data byte from memory using absolute addressing, with data addressed by 
+ * current instruction pointer.
+ * \param memory Reference to system memory.
+ * \return 8-bit value from memory.
+ */
 Byte CPU::get_data_absolute(Memory& memory)
 {
     //get address from next two bytes and add index
@@ -1110,6 +1158,12 @@ Byte CPU::get_data_absolute(Memory& memory)
     return get_byte(memory, address);
 }
 
+/** \brief Get data byte from memory using absolute addressing, with data addressed by 
+ * current instruction pointer and an index.
+ * \param memory Reference to system memory.
+ * \param index A byte to add to the address to be read from.
+ * \return 8-bit value from memory.
+ */
 Byte CPU::get_data_absolute(Memory& memory, const Byte index)
 {
     //get address from next two bytes and add index
@@ -1128,7 +1182,7 @@ Byte CPU::get_data_absolute(Memory& memory, const Byte index)
     return get_byte(memory, address);
 }
 
-/**  \brief Performs addition of accumulator and data, setting the carry bit as required.
+/** \brief Performs addition of accumulator and data, setting the carry bit as required.
  * \param data A byte of data to be added to the accumulator.
  * \return A byte to be stored in the accumulator.
  */
@@ -1181,6 +1235,11 @@ Byte CPU::get_data_zero_page(Memory& memory, const Byte index)
     return get_byte(memory, data_address);
 }
 
+/** \brief Get a word from the zero page with full wrapping.
+ * \param memory Reference to system memory.
+ * \param address The zero page address of the first byte to be read.
+ * \return 16-bit value from the zero page.
+ */
 Word CPU::get_word_zpg_wrap(Memory& memory, const Byte address)
 {
     Word val1 = (Word)memory[address % 256];
@@ -1188,6 +1247,11 @@ Word CPU::get_word_zpg_wrap(Memory& memory, const Byte address)
     return (val2 << 8) | val1;
 }
 
+/** \brief Get data from memory using the (indirect,x) addressing mode.
+ * \param memory Reference to system memory.
+ * \param index Index added to address.
+ * \return 8-bit value from memory.
+ */
 Byte CPU::get_data_indexed_indirect(Memory& memory, const Byte index)
 {
     // read next byte and add index without carry
@@ -1200,6 +1264,11 @@ Byte CPU::get_data_indexed_indirect(Memory& memory, const Byte index)
     return get_byte(memory, target_address);
 }
 
+/** \brief Get data from memory using the (indirect),y addressing mode.
+ * \param memory Reference to system memory.
+ * \param index Index to add to address.
+ * \return 8-bit value from memory.
+ */
 Byte CPU::get_data_indirect_indexed(Memory& memory, const Byte index)
 {
     //read next byte and add index without carry
@@ -1240,12 +1309,19 @@ void CPU::branch_relative(Byte distance)
     }
 }
 
-
+/** \brief Encode all CPU flags into a single byte.
+ * \return 8-bit value containing all CPU flags.
+ */
 Byte CPU::flags_as_byte()
 {
     return (N << 7) | (V << 6) | (true << 5) | (B << 4) | (D << 3) | (I << 2) | (Z << 1) | (C << 1);
 }
 
+/** \brief Print a summary of the CPU state to an iostream.
+ * \param stream Reference to stream to write to.
+ * \param cpu Const reference to the CPU to be printed.
+ * \return Reference to the stream being written to.
+ */
 std::ostream& operator<<(std::ostream& stream, const CPU& cpu)
 {
     stream << "A: 0x" << std::hex << std::setw(2) << std::setfill('0') << (int)cpu.A;
