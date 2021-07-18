@@ -270,6 +270,25 @@ void CPU::run(Memory& memory)
                 }
                 break;
 
+            case INSTR_6502_TXS:
+                SP = X;
+                sem.wait();
+                break;
+
+            case INSTR_6502_TSX:
+                X = SP;
+                Z = (X == 0);
+                N = (X & 0x80);
+                sem.wait();
+                break;
+
+            case INSTR_6502_TYA:
+                A = Y;
+                Z = (A == 0);
+                N = (A & 0x80);
+                sem.wait();
+                break;
+
             case INSTR_6502_STA_ZEROPAGE:
                 {
                     // get address
@@ -319,6 +338,12 @@ void CPU::run(Memory& memory)
                 TAX_set_CPU_flags();
                 sem.wait();
                 break;
+
+            case INSTR_6502_TAY:
+                Y = A;
+                Z = (Y == 0);
+                N = (Y & 0x80);
+                sem.wait();
 
             case INSTR_6502_TXA:
                 A = X;
@@ -614,14 +639,105 @@ void CPU::run(Memory& memory)
                     // http://www.righto.com/2012/12/the-6502-overflow-flag-explained.html
                     Byte data = get_byte(memory);
                     IP++;
-
-                    Word result = (Word)data + (Word)A + (Word)C;       // Result = accumulator + data_from_memory + carry_flag
-                    Z = result == 0;                                    // Set Z if result is zero
-                    C = result > 255;                                   // Set C if result overflowed, i.e. didn't fit in eight bits
-                    N = result & 0b10000000;                            // Set N if result is negative (i.e. sign bit is on)
-                    V = ((A ^ result) & (data ^ result) & 0x80) != 0;   // TODO: This part is not fully understood.
-                    A = (Byte)(result & 0xFF);                          // Accumulator is set to the part of the result that fits in eight bits.
+                    A = add_with_carry(data);
                     sem.wait();
+                }
+                break;
+
+            case INSTR_6502_ADC_ZERO_PAGE:
+                {
+                    Byte data = get_data_zero_page(memory);
+                    IP++;
+                    A = add_with_carry(data);
+                    sem.wait();
+                    sem.wait();
+                }
+                break;
+
+            case INSTR_6502_ADC_ZERO_PAGE_X:
+                {
+                    Byte data = get_data_zero_page(memory, X);
+                    IP++;
+                    A = add_with_carry(data);
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                }
+                break;
+
+            case INSTR_6502_ADC_ABSOLUTE:
+                {
+                    Byte data = get_data_absolute(memory);
+                    IP++;
+                    IP++;
+                    A = add_with_carry(data);
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                }
+                break;
+
+            case INSTR_6502_ADC_ABSOLUTE_X:
+                {
+                    Byte data = get_data_absolute(memory, X);
+                    IP++;
+                    IP++;
+                    A = add_with_carry(data);
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    if (page_crossed)
+                    {
+                        page_crossed = false;
+                        sem.wait();
+                    }
+                }
+                break;
+
+            case INSTR_6502_ADC_ABSOLUTE_Y:
+                {
+                    Byte data = get_data_absolute(memory, Y);
+                    IP++;
+                    IP++;
+                    A = add_with_carry(data);
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    if (page_crossed)
+                    {
+                        page_crossed = false;
+                        sem.wait();
+                    }
+                }
+                break;
+
+            case INSTR_6502_ADC_INDIRECT_X:
+                {
+                    Byte data = get_data_indexed_indirect(memory, X);
+                    IP++;
+                    A = add_with_carry(data);
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                }
+                break;
+
+            case INSTR_6502_ADC_INDIRECT_Y:
+                {
+                    Byte data = get_data_indirect_indexed(memory, Y);
+                    IP++;
+                    A = add_with_carry(data);
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    if (page_crossed)
+                    {
+                        page_crossed = false;
+                        sem.wait();
+                    }
                 }
                 break;
 
@@ -1053,12 +1169,39 @@ Word CPU::get_word(Memory& memory, const Word address)
     return (val2 << 8) | val1;
 }
 
-Byte CPU::get_data_indexed_absolute(Memory& memory, const Byte index)
+Byte CPU::get_data_absolute(Memory& memory)
+{
+    //get address from next two bytes and add index
+    Word address = get_word(memory);
+    //return data at address
+    return get_byte(memory, address);
+}
+
+Byte CPU::get_data_absolute(Memory& memory, const Byte index)
 {
     //get address from next two bytes and add index
     Word address = get_word(memory) + index;
+    
+    // Check for page crossing for extra cycle.
+    Byte current_page = IP >> 8;
+    Byte data_page = address >> 8;
+    if (current_page != data_page)
+    {
+        this->page_crossed = true;
+    }
+    
     //return data at address
     return get_byte(memory, address);
+}
+
+Byte CPU::add_with_carry(Byte data)
+{
+    Word result = (Word)data + (Word)A + (Word)C;
+    Z = (result == 0);
+    C = (result > 255);
+    N = (result & 0x80);
+    V = ((A ^ result) & (data ^ result) & 0x80) != 0;
+    return (Byte)(result & 0xFF);
 }
 
 /** \brief Fetches a byte using relative addressing mode.
@@ -1126,6 +1269,15 @@ Byte CPU::get_data_indirect_indexed(Memory& memory, const Byte index)
 
     //get target address from indirect_address data and next on zero page and add index
     Word target_address = get_word_zpg_wrap(memory, indirect_address) + index;
+
+    // TODO I'm not at all sure this is right! Consider it a placeholder.
+    // Check if page crossed.
+    Byte current_page = IP >> 8;
+    Byte data_page = target_address >> 8;
+    if (current_page != data_page)
+    {
+        page_crossed = true;
+    }
 
     //get data from target address and return
     return get_byte(memory, target_address);

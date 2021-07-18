@@ -38,3 +38,5 @@ emu.dir/Debug/emu.tlog/emu.lastbuildstate
 emu.dir/Debug/emu.tlog/link.command.1.tlog
 emu.dir/Debug/emu.tlog/link.read.1.tlog
 emu.dir/Debug/emu.tlog/link.write.1.tlog
+test/6502_functional_test.bin
+

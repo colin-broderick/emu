@@ -50,9 +50,21 @@ class CPU
 
     // TXA - Transfer X to A
     const static Byte INSTR_6502_TXA = 0x8A;                 // 2,
+    const static Byte INSTR_6502_TXS = 0x9A;                 // 2
+    const static Byte INSTR_6502_TSX = 0xBA;                 // 2
+    const static Byte INSTR_6502_TYA = 0x98;                 // 2
+    const static Byte INSTR_6502_TAY = 0xA8;                 // 2
 
     // ADC - ADd with Carry
     const static Byte INSTR_6502_ADC_IMMEDIATE = 0x69;       // 2, Add to A with carry and all sorts of flag nonsense.
+    const static Byte INSTR_6502_ADC_ZERO_PAGE = 0x65;       // 3, Add to A with carry and all sorts of flag nonsense.
+    const static Byte INSTR_6502_ADC_ZERO_PAGE_X = 0x75;     // 4, Add to A with carry and all sorts of flag nonsense.
+    const static Byte INSTR_6502_ADC_ABSOLUTE = 0x6D;        // 4, Add to A with carry and all sorts of flag nonsense.
+    const static Byte INSTR_6502_ADC_ABSOLUTE_X = 0x7D;      // 4+, Add to A with carry and all sorts of flag nonsense.
+    const static Byte INSTR_6502_ADC_ABSOLUTE_Y = 0x79;      // 4+, Add to A with carry and all sorts of flag nonsense.
+    const static Byte INSTR_6502_ADC_INDIRECT_X = 0x61;      // 6, Add to A with carry and all sorts of flag nonsense.
+    const static Byte INSTR_6502_ADC_INDIRECT_Y = 0x71;      // 5, Add to A with carry and all sorts of flag nonsense.
+
 
     // INX - INcrement X
     const static Byte INSTR_6502_INX = 0xE8;                 // 2, Incremement the value in X.
@@ -154,6 +166,9 @@ class CPU
         void ORA_set_CPU_flags();
 
         void branch_relative(Byte distance);
+        Byte add_with_carry(Byte data);
+
+        bool page_crossed = false;
 
     public:
         // Attributes -----------------------------------------------------------------------------------------------------------
@@ -178,7 +193,8 @@ class CPU
         Word get_word(Memory& memory, const Word address);
         Word get_word_zpg_wrap(Memory& memory, const Byte address);
 
-        Byte get_data_indexed_absolute(Memory& memory, const Byte index);
+        Byte get_data_absolute(Memory& memory);
+        Byte get_data_absolute(Memory& memory, const Byte index);
         Byte get_data_relative(Memory& memory);
         Byte get_data_immediate(Memory& memory);
         Byte get_data_zero_page(Memory& memory);
