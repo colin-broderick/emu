@@ -41,6 +41,12 @@ void CPU::CMP_set_CPU_flags(Byte data_from_memory)
     }
 }
 
+/** \brief Sets appropriate CPU flags following an EOR operation. */
+void CPU::EOR_set_CPU_flags()
+{
+    LDA_set_CPU_flags();
+}
+
 /** \brief Sets appropriuate flags after performing ORA operation. */
 void CPU::ORA_set_CPU_flags()
 {
@@ -230,6 +236,7 @@ void CPU::run(Memory& memory)
                 {
                     Byte data = get_data_absolute(memory);
                     IP++;
+                    IP++;
                     CMP_set_CPU_flags(data);
                     sem.wait();
                     sem.wait();
@@ -240,6 +247,7 @@ void CPU::run(Memory& memory)
             case INSTR_6502_CMP_ABSOLUTE_X:
                 {
                     Byte data = get_data_absolute(memory, X);
+                    IP++;
                     IP++;
                     CMP_set_CPU_flags(data);
                     sem.wait();
@@ -256,6 +264,7 @@ void CPU::run(Memory& memory)
             case INSTR_6502_CMP_ABSOLUTE_Y:
                 {
                     Byte data = get_data_absolute(memory, Y);
+                    IP++;
                     IP++;
                     CMP_set_CPU_flags(data);
                     sem.wait();
@@ -287,6 +296,112 @@ void CPU::run(Memory& memory)
                     Byte data = get_data_indirect_indexed(memory, Y);
                     IP++;
                     CMP_set_CPU_flags(data);
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    if (page_crossed)
+                    {
+                        page_crossed = false;
+                        sem.wait();
+                    }
+                }
+                break;
+
+            case INSTR_6502_EOR_IMMEDIATE:
+                {
+                    A = A ^ get_data_immediate(memory);
+                    IP++;
+                    EOR_set_CPU_flags();
+                    sem.wait();
+                }
+                break;
+
+            case INSTR_6502_EOR_ZERO_PAGE:
+                {
+                    A = A ^ get_data_zero_page(memory);
+                    IP++;
+                    EOR_set_CPU_flags();
+                    sem.wait();
+                    sem.wait();
+                }
+                break;
+
+            case INSTR_6502_EOR_ZERO_PAGE_X:
+                {
+                    A = A ^ get_data_zero_page(memory, X);
+                    IP++;
+                    EOR_set_CPU_flags();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                }
+                break;
+
+            case INSTR_6502_EOR_ABSOLUTE:
+                {
+                    A = A ^ get_data_absolute(memory);
+                    IP++;
+                    IP++;
+                    EOR_set_CPU_flags();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                }
+                break;
+
+            case INSTR_6502_EOR_ABSOLUTE_X:
+                {
+                    A = A ^ get_data_absolute(memory, X);
+                    IP++;
+                    IP++;
+                    EOR_set_CPU_flags();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    if (page_crossed)
+                    {
+                        page_crossed = false;
+                        sem.wait();
+                    }
+                }
+                break;
+
+            case INSTR_6502_EOR_ABSOLUTE_Y:
+                {
+                    A = A ^ get_data_absolute(memory, Y);
+                    IP++;
+                    IP++;
+                    EOR_set_CPU_flags();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    if (page_crossed)
+                    {
+                        page_crossed = false;
+                        sem.wait();
+                    }
+                }
+                break;
+
+            case INSTR_6502_EOR_INDIRECT_X:
+                {
+                    A = A ^ get_data_indexed_indirect(memory, X);
+                    IP++;
+                    EOR_set_CPU_flags();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                }
+                break;
+
+            case INSTR_6502_EOR_INDIRECT_Y:
+                {
+                    A = A ^ get_data_indirect_indexed(memory, Y);
+                    IP++;
+                    EOR_set_CPU_flags();
                     sem.wait();
                     sem.wait();
                     sem.wait();
