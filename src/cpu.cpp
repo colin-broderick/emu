@@ -70,159 +70,92 @@ void CPU::run(Memory& memory)
         switch (instruction)
         {
             case INSTR_6502_LDA_IMMEDIATE:
-                {
-                    // If the instruction is LDA, we grab the next byte and store it in the acc.
-                    A = get_byte(memory);
-
-                    // Set CPU flags as appropriate.
-                    LDA_set_CPU_flags();
-
-                    // This consumes another clock cycle, so we wait here.
-                    sem.wait();
-
-                    // And we increment the IP again.
-                    IP++;
-                }
+                A = get_data_immediate(memory);
+                IP++;
+                LDA_set_CPU_flags();
+                sem.wait();
                 break;
 
             case INSTR_6502_LDA_ZEROPAGE:
-                {
-                    // Get the address and incrememnt PC
-                    Byte data_address = get_byte(memory);
-                    sem.wait();
-                    IP++;
-
-                    // Load from the address into RAM
-                    A = get_byte(memory, data_address);
-                    LDA_set_CPU_flags();
-                    sem.wait();
-                    
-                }
+                A = get_data_zero_page(memory);
+                IP++;
+                LDA_set_CPU_flags();
+                sem.wait();
+                sem.wait();
                 break;
 
             case INSTR_6502_LDA_ZEROPAGE_X:
-                {
-                    // get address
-                    Byte data_address = get_byte(memory);
-                    sem.wait();
-                    IP++;
-
-                    // add X
-                    data_address += X;
-                    sem.wait();
-
-                    // load into A
-                    A = get_byte(memory, data_address);
-                    LDA_set_CPU_flags();
-                    sem.wait();
-                }
+                A = get_data_zero_page(memory, X);
+                IP++;
+                LDA_set_CPU_flags();
+                sem.wait();
+                sem.wait();
+                sem.wait();
                 break;
 
             case INSTR_6502_LDA_ABSOLUTE:
-                {
-                    // Load address
-                    Word data_address = get_word(memory);
-                    sem.wait();
-                    IP++;
-                    sem.wait();
-                    IP++;
-                    
-                    // Load from address into A.
-                    A = get_byte(memory, data_address);
-                    LDA_set_CPU_flags();
-                    sem.wait();
-                }
+                A = get_data_absolute(memory);
+                IP++;
+                IP++;
+                LDA_set_CPU_flags();
+                sem.wait();
+                sem.wait();
+                sem.wait();
                 break;
 
             case INSTR_6502_LDA_ABSOLUTE_X:
+                A = get_data_absolute(memory, X);
+                IP++;
+                IP++;
+                LDA_set_CPU_flags();
+                sem.wait();
+                sem.wait();
+                sem.wait();
+                if (page_crossed)
                 {
-
-                    Word load_from_address = get_word(memory);
-                    Byte page1 = load_from_address >> 8;
-                    load_from_address += X;
-                    Byte page2 = load_from_address >> 8;
-                    
-                    IP++;
-                    IP++;
-
-                    A = get_byte(memory, load_from_address);
-
-                    LDA_set_CPU_flags();
+                    page_crossed = false;
                     sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    if (page1 != page2)
-                    {
-                        sem.wait();
-                    }
                 }
                 break;
 
             case INSTR_6502_LDA_ABSOLUTE_Y:
+                A = get_data_absolute(memory, Y);
+                IP++;
+                IP++;
+                LDA_set_CPU_flags();
+                sem.wait();
+                sem.wait();
+                sem.wait();
+                if (page_crossed)
                 {
-
-                    Word load_from_address = get_word(memory);
-                    Byte page1 = load_from_address >> 8;
-                    load_from_address += Y;
-                    Byte page2 = load_from_address >> 8;
-                    
-                    IP++;
-                    IP++;
-
-                    A = get_byte(memory, load_from_address);
-
-                    LDA_set_CPU_flags();
+                    page_crossed = false;
                     sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    if (page1 != page2)
-                    {
-                        sem.wait();
-                    }
                 }
                 break;
             
             case INSTR_6502_LDA_INDIRECT_X:
-                {
-                    // Read next byte to get indirect address and jump over it
-                    Byte indirect_address = get_byte(memory) + X;
-                    sem.wait();
-                    IP++;
-
-                    // Get the data from other address
-                    Word target_address = get_word_zpg_wrap(memory, indirect_address);
-                    sem.wait();
-
-                    // Get the data to be ORed with A.
-                    A = get_byte(memory, target_address);
-                    sem.wait();
-
-                    LDA_set_CPU_flags();
-                    sem.wait();
-                    sem.wait();
-                }
+                A = get_data_indexed_indirect(memory, X);
+                IP++;
+                LDA_set_CPU_flags();
+                sem.wait();
+                sem.wait();
+                sem.wait();
+                sem.wait();
+                sem.wait();
                 break;
 
             case INSTR_6502_LDA_INDIRECT_Y:
+                A = get_data_indirect_indexed(memory, Y);
+                IP++;
+                LDA_set_CPU_flags();
+                sem.wait();
+                sem.wait();
+                sem.wait();
+                sem.wait();
+                if (page_crossed)
                 {
-                    Byte indirect_address = get_byte(memory);
-                    IP++;
-
-                    Word address = get_word(memory, indirect_address);
-                    Byte page1 = address >> 8;
-                    address += Y;
-                    Byte page2 = address >> 8;
-
-                    LDA_set_CPU_flags();
+                    page_crossed = false;
                     sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-
-                    if (page1 != page2)
-                    {
-                        sem.wait();
-                    }
                 }
                 break;
 
@@ -1180,12 +1113,13 @@ Byte CPU::get_data_absolute(Memory& memory)
 Byte CPU::get_data_absolute(Memory& memory, const Byte index)
 {
     //get address from next two bytes and add index
-    Word address = get_word(memory) + index;
+    Word address = get_word(memory);
+    Byte page1 = address >> 8;
+    address += index;
+    Byte page2 = address >> 8;
     
     // Check for page crossing for extra cycle.
-    Byte current_page = IP >> 8;
-    Byte data_page = address >> 8;
-    if (current_page != data_page)
+    if (page1 != page2)
     {
         this->page_crossed = true;
     }
@@ -1194,6 +1128,10 @@ Byte CPU::get_data_absolute(Memory& memory, const Byte index)
     return get_byte(memory, address);
 }
 
+/**  \brief Performs addition of accumulator and data, setting the carry bit as required.
+ * \param data A byte of data to be added to the accumulator.
+ * \return A byte to be stored in the accumulator.
+ */
 Byte CPU::add_with_carry(Byte data)
 {
     Word result = (Word)data + (Word)A + (Word)C;
@@ -1270,7 +1208,7 @@ Byte CPU::get_data_indirect_indexed(Memory& memory, const Byte index)
     //get target address from indirect_address data and next on zero page and add index
     Word target_address = get_word_zpg_wrap(memory, indirect_address) + index;
 
-    // TODO I'm not at all sure this is right! Consider it a placeholder.
+    // TODO I'm pretty sure this is completely wrong! Consider it a placeholder.
     // Check if page crossed.
     Byte current_page = IP >> 8;
     Byte data_page = target_address >> 8;
