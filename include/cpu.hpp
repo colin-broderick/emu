@@ -50,6 +50,10 @@ class CPU
 
     // TXA - Transfer X to A
     const static Byte INSTR_6502_TXA = 0x8A;                 // 2,
+    const static Byte INSTR_6502_TXS = 0x9A;                 // 2
+    const static Byte INSTR_6502_TSX = 0xBA;                 // 2
+    const static Byte INSTR_6502_TYA = 0x98;                 // 2
+    const static Byte INSTR_6502_TAY = 0xA8;                 // 2
 
     // ADC - ADd with Carry
     const static Byte INSTR_6502_ADC_IMMEDIATE = 0x69;       // 2, Add to A with carry and all sorts of flag nonsense.

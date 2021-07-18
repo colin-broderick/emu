@@ -270,6 +270,25 @@ void CPU::run(Memory& memory)
                 }
                 break;
 
+            case INSTR_6502_TXS:
+                SP = X;
+                sem.wait();
+                break;
+
+            case INSTR_6502_TSX:
+                X = SP;
+                Z = (X == 0);
+                N = (X & 0x80);
+                sem.wait();
+                break;
+
+            case INSTR_6502_TYA:
+                A = Y;
+                Z = (A == 0);
+                N = (A & 0x80);
+                sem.wait();
+                break;
+
             case INSTR_6502_STA_ZEROPAGE:
                 {
                     // get address
@@ -319,6 +338,12 @@ void CPU::run(Memory& memory)
                 TAX_set_CPU_flags();
                 sem.wait();
                 break;
+
+            case INSTR_6502_TAY:
+                Y = A;
+                Z = (Y == 0);
+                N = (Y & 0x80);
+                sem.wait();
 
             case INSTR_6502_TXA:
                 A = X;
