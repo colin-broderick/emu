@@ -12,6 +12,7 @@ CPU::CPU()
 {
     IP = 0x0000;
     SP = 0x01FF;
+    C = Z = I = D = B = V = N = false;
 }
 
 /** \brief Sets appropriate flags after performing LDA operations. */
@@ -606,7 +607,7 @@ void CPU::run(Memory& memory)
 
             case INSTR_6502_CPX_IMMEDIATE:
                 {
-                    Word result = static_cast<Word>(X) - static_cast<Word>(get_byte(memory));
+                    Word result = static_cast<Word>(X - get_byte(memory));
                     if (result >= 0)
                     {
                         C = true;
@@ -626,7 +627,7 @@ void CPU::run(Memory& memory)
 
             case INSTR_6502_CPY_IMMEDIATE:
                 {
-                    Word result = static_cast<Word>(Y) - static_cast<Word>(get_byte(memory));
+                    Word result = static_cast<Word>(Y - get_byte(memory));
                     if (result >= 0)
                     {
                         C = true;
@@ -1408,7 +1409,7 @@ Word CPU::get_word(Memory& memory)
 Word CPU::get_word(Memory& memory, const Byte address)
 {
     Word val1 = static_cast<Word>(memory[address]);
-    Word val2 = static_cast<Word>(memory[static_cast<Word>(address+1)]);
+    Word val2 = static_cast<Word>(memory[address+1]);
     return static_cast<Word>(val2 << 8) | val1;
 }
 
