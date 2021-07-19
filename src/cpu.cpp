@@ -26,7 +26,7 @@ void CPU::LDA_set_CPU_flags()
  */
 void CPU::CMP_set_CPU_flags(Byte data_from_memory)
 {
-    Word difference = (Word)A - (Word)data_from_memory;
+    Word difference = static_cast<Word>(A - data_from_memory);
     if (A >= data_from_memory)
     {
         C = true;
@@ -508,7 +508,8 @@ void CPU::run(Memory& memory)
                 break;
 
             case INSTR_6502_TSX:
-                X = SP;
+                // TODO This doesn't seem right. Is says "stack register"; does that mean contents of current stack pointer address, or stack pointer itself?
+                X = static_cast<Byte>(SP & 0x00FF);
                 Z = (X == 0);
                 N = (X & 0x80);
                 sem.wait();
@@ -605,7 +606,7 @@ void CPU::run(Memory& memory)
 
             case INSTR_6502_CPX_IMMEDIATE:
                 {
-                    Word result = (Word)X - (Word)get_byte(memory);
+                    Word result = static_cast<Word>(X) - static_cast<Word>(get_byte(memory));
                     if (result >= 0)
                     {
                         C = true;
@@ -625,7 +626,7 @@ void CPU::run(Memory& memory)
 
             case INSTR_6502_CPY_IMMEDIATE:
                 {
-                    Word result = (Word)Y - (Word)get_byte(memory);
+                    Word result = static_cast<Word>(Y) - static_cast<Word>(get_byte(memory));
                     if (result >= 0)
                     {
                         C = true;
@@ -646,7 +647,7 @@ void CPU::run(Memory& memory)
             case INSTR_6502_BNE_RELATIVE:
                 {
                     // Remember the starting page so we know if we've moved to a new page.
-                    Byte current_page = IP >> 8;
+                    Byte current_page = static_cast<Byte>(IP >> 8);
                     sem.wait();
 
                     if (!Z)
@@ -658,7 +659,7 @@ void CPU::run(Memory& memory)
                     IP++;
 
                     // This should take two additional clock cycles if the branch leads to a new page.
-                    Byte new_page = IP >> 8;
+                    Byte new_page = static_cast<Byte>(IP >> 8);
                     if (current_page != new_page)
                     {
                         sem.wait();
@@ -670,7 +671,7 @@ void CPU::run(Memory& memory)
             case INSTR_6502_BEQ_RELATIVE:
                 {
                     // Remember the starting page so we know if we've moved to a new page.
-                    Byte current_page = IP >> 8;
+                    Byte current_page = static_cast<Byte>(IP >> 8);
                     sem.wait();
 
                     if (Z)
@@ -682,7 +683,7 @@ void CPU::run(Memory& memory)
                     IP++;
 
                     // This should take two additional clock cycles if the branch leads to a new page.
-                    Byte new_page = IP >> 8;
+                    Byte new_page = static_cast<Byte>(IP >> 8);
                     if (current_page != new_page)
                     {
                         sem.wait();
@@ -693,7 +694,7 @@ void CPU::run(Memory& memory)
 
             case INSTR_6502_BMI_RELATIVE:
                 {
-                    Byte current_page = IP >> 8;
+                    Byte current_page = static_cast<Byte>(IP >> 8);
                     sem.wait();
 
                     if (N)
@@ -704,7 +705,7 @@ void CPU::run(Memory& memory)
                     }
                     IP++;
 
-                    Byte new_page = IP >> 8;
+                    Byte new_page = static_cast<Byte>(IP >> 8);
                     if (current_page != new_page)
                     {
                         sem.wait();
@@ -715,7 +716,7 @@ void CPU::run(Memory& memory)
 
             case INSTR_6502_BPL_RELATIVE:
                 {
-                    Byte current_page = IP >> 8;
+                    Byte current_page = static_cast<Byte>(IP >> 8);
                     sem.wait();
 
                     if (!N)
@@ -726,7 +727,7 @@ void CPU::run(Memory& memory)
                     }
                     IP++;
 
-                    Byte new_page = IP >> 8;
+                    Byte new_page = static_cast<Byte>(IP >> 8);
                     if (current_page != new_page)
                     {
                         sem.wait();
@@ -737,7 +738,7 @@ void CPU::run(Memory& memory)
             
             case INSTR_6502_BVC_RELATIVE:
                 {
-                    Byte current_page = IP >> 8;
+                    Byte current_page = static_cast<Byte>(IP >> 8);
                     sem.wait();
 
                     if (!V)
@@ -748,7 +749,7 @@ void CPU::run(Memory& memory)
                     }
                     IP++;
 
-                    Byte new_page = IP >> 8;
+                    Byte new_page = static_cast<Byte>(IP >> 8);
                     if (current_page != new_page)
                     {
                         sem.wait();
@@ -759,7 +760,7 @@ void CPU::run(Memory& memory)
 
             case INSTR_6502_BVS_RELATIVE:
                 {
-                    Byte current_page = IP >> 8;
+                    Byte current_page = static_cast<Byte>(IP >> 8);
                     sem.wait();
 
                     if (V)
@@ -770,7 +771,7 @@ void CPU::run(Memory& memory)
                     }
                     IP++;
 
-                    Byte new_page = IP >> 8;
+                    Byte new_page = static_cast<Byte>(IP >> 8);
                     if (current_page != new_page)
                     {
                         sem.wait();
@@ -781,7 +782,7 @@ void CPU::run(Memory& memory)
 
             case INSTR_6502_BCC_RELATIVE:
                 {
-                    Byte current_page = IP >> 8;
+                    Byte current_page = static_cast<Byte>(IP >> 8);
                     sem.wait();
 
                     if (!C)
@@ -792,7 +793,7 @@ void CPU::run(Memory& memory)
                     }
                     IP++;
 
-                    Byte new_page = IP >> 8;
+                    Byte new_page = static_cast<Byte>(IP >> 8);
                     if (current_page != new_page)
                     {
                         sem.wait();
@@ -803,7 +804,7 @@ void CPU::run(Memory& memory)
 
             case INSTR_6502_BCS_RELATIVE:
                 {
-                    Byte current_page = IP >> 8;
+                    Byte current_page = static_cast<Byte>(IP >> 8);
                     sem.wait();
 
                     if (C)
@@ -814,7 +815,7 @@ void CPU::run(Memory& memory)
                     }
                     IP++;
 
-                    Byte new_page = IP >> 8;
+                    Byte new_page = static_cast<Byte>(IP >> 8);
                     if (current_page != new_page)
                     {
                         sem.wait();
@@ -1013,9 +1014,14 @@ void CPU::run(Memory& memory)
                 sem.wait();
                 sem.wait();
                 B = true;
-                set_byte(memory, SP, IP);
+
+                memory[SP] = static_cast<Byte>(IP >> 8);
                 SP--;
-                set_byte(memory, SP, flags_as_byte());
+                memory[SP] = static_cast<Byte>(IP & 0xFF);
+                SP--;
+                memory[SP] = flags_as_byte();
+                SP--;
+
                 std::cout << "BRK reached" << std::endl;
                 return;
 
@@ -1024,9 +1030,9 @@ void CPU::run(Memory& memory)
                     // Pushes (address minus one) of the return point onto the stack then sets program counter to target address
                     Word target_address = get_word(memory);
                     IP++;
-                    memory[SP] = (IP >> 8);
+                    memory[SP] = static_cast<Byte>(IP >> 8);
                     SP--;
-                    memory[SP] = (IP & 0xFF);
+                    memory[SP] = static_cast<Byte>(IP & 0xFF);
                     SP--;
                     IP = target_address;
                     sem.wait();
@@ -1310,9 +1316,9 @@ void CPU::run(Memory& memory)
                     Byte indirect_address = get_byte(memory);
                     IP++;
                     Word target_address = get_word_zpg_wrap(memory, indirect_address);
-                    Byte page1 = target_address >> 8;
+                    Byte page1 = static_cast<Byte>(target_address >> 8);
                     target_address += Y;
-                    Byte page2 = target_address >> 8;
+                    Byte page2 = static_cast<Byte>(target_address >> 8);
 
                     Byte operand = get_byte(memory, target_address);
 
@@ -1389,9 +1395,9 @@ Byte CPU::get_byte(Memory& memory, const Word address)
  */
 Word CPU::get_word(Memory& memory)
 {
-    Word val1 = (Word)memory[IP];
-    Word val2 = (Word)memory[IP+1];
-    return (val2 << 8) | val1;
+    Word val1 = static_cast<Word>(memory[IP]);
+    Word val2 = static_cast<Word>(memory[IP+1]);
+    return static_cast<Word>(val2 << 8) | val1;
 }
 
 /** \brief Gets a full word from the zero page in memory.
@@ -1401,9 +1407,9 @@ Word CPU::get_word(Memory& memory)
  */
 Word CPU::get_word(Memory& memory, const Byte address)
 {
-    Word val1 = (Word)memory[address];
-    Word val2 = (Word)memory[(Word)address+1];
-    return (val2 << 8) | val1;
+    Word val1 = static_cast<Word>(memory[address]);
+    Word val2 = static_cast<Word>(memory[static_cast<Word>(address+1)]);
+    return static_cast<Word>(val2 << 8) | val1;
 }
 
 /** \brief Gets a full word from anywhere in memory.
@@ -1413,9 +1419,9 @@ Word CPU::get_word(Memory& memory, const Byte address)
  */
 Word CPU::get_word(Memory& memory, const Word address)
 {
-    Word val1 = (Word)memory[address];
-    Word val2 = (Word)memory[address+1];
-    return (val2 << 8) | val1;
+    Word val1 = static_cast<Word>(memory[address]);
+    Word val2 = static_cast<Word>(memory[address+1]);
+    return static_cast<Word>(val2 << 8) | val1;
 }
 
 /** \brief Get data byte from memory using absolute addressing, with data addressed by 
@@ -1441,9 +1447,9 @@ Byte CPU::get_data_absolute(Memory& memory, const Byte index)
 {
     //get address from next two bytes and add index
     Word address = get_word(memory);
-    Byte page1 = address >> 8;
+    Byte page1 = static_cast<Byte>(address >> 8);
     address += index;
-    Byte page2 = address >> 8;
+    Byte page2 = static_cast<Byte>(address >> 8);
     
     // Check for page crossing for extra cycle.
     if (page1 != page2)
@@ -1461,12 +1467,12 @@ Byte CPU::get_data_absolute(Memory& memory, const Byte index)
  */
 Byte CPU::add_with_carry(Byte data)
 {
-    Word result = (Word)data + (Word)A + (Word)C;
+    Word result = static_cast<Word>(data + A + C);
     Z = (result == 0);
     C = (result > 255);
     N = (result & 0x80);
     V = ((A ^ result) & (data ^ result) & 0x80) != 0;
-    return (Byte)(result & 0xFF);
+    return static_cast<Byte>(result & 0xFF);
 }
 
 /** \brief Fetches a byte using relative addressing mode.
@@ -1515,9 +1521,9 @@ Byte CPU::get_data_zero_page(Memory& memory, const Byte index)
  */
 Word CPU::get_word_zpg_wrap(Memory& memory, const Byte address)
 {
-    Word val1 = (Word)memory[address % 256];
-    Word val2 = (Word)memory[(address+1) % 256];   // This wraps automatically since address is a Byte
-    return (val2 << 8) | val1;
+    Word val1 = static_cast<Word>(memory[address % 256]);
+    Word val2 = static_cast<Word>(memory[(address+1) % 256]);   // This wraps automatically since address is a Byte
+    return static_cast<Word>(val2 << 8) | val1;
 }
 
 /** \brief Get data from memory using the (indirect,x) addressing mode.
@@ -1552,8 +1558,8 @@ Byte CPU::get_data_indirect_indexed(Memory& memory, const Byte index)
 
     // TODO I'm pretty sure this is completely wrong! Consider it a placeholder.
     // Check if page crossed.
-    Byte current_page = IP >> 8;
-    Byte data_page = target_address >> 8;
+    Byte current_page = static_cast<Byte>(IP >> 8);
+    Byte data_page = static_cast<Byte>(target_address >> 8);
     if (current_page != data_page)
     {
         page_crossed = true;
@@ -1587,7 +1593,16 @@ void CPU::branch_relative(Byte distance)
  */
 Byte CPU::flags_as_byte()
 {
-    return (N << 7) | (V << 6) | (true << 5) | (B << 4) | (D << 3) | (I << 2) | (Z << 1) | (C << 1);
+    return static_cast<Byte>(
+          (N << 7) 
+        | (V << 6) 
+        | (true << 5) 
+        | (B << 4) 
+        | (D << 3) 
+        | (I << 2) 
+        | (Z << 1) 
+        | (C << 1)
+    );
 }
 
 /** \brief Print a summary of the CPU state to an iostream.
