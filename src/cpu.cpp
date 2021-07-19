@@ -91,6 +91,9 @@ void CPU::run(Memory& memory)
         std::cout << memory << "\n";
         #endif
 
+        // Reset the page crossing flag in case it was left on from the last iteration.
+        page_crossed = false;
+
         // TODO Interrupt handler should go here.
 
         // Grab an instruction from RAM.
@@ -149,7 +152,6 @@ void CPU::run(Memory& memory)
                 sem.wait();
                 if (page_crossed)
                 {
-                    page_crossed = false;
                     sem.wait();
                 }
                 break;
@@ -164,7 +166,6 @@ void CPU::run(Memory& memory)
                 sem.wait();
                 if (page_crossed)
                 {
-                    page_crossed = false;
                     sem.wait();
                 }
                 break;
@@ -190,7 +191,6 @@ void CPU::run(Memory& memory)
                 sem.wait();
                 if (page_crossed)
                 {
-                    page_crossed = false;
                     sem.wait();
                 }
                 break;
@@ -255,7 +255,6 @@ void CPU::run(Memory& memory)
                     sem.wait();
                     if (page_crossed)
                     {
-                        page_crossed = false;
                         sem.wait();
                     }
                 }
@@ -272,7 +271,6 @@ void CPU::run(Memory& memory)
                     sem.wait();
                     if (page_crossed)
                     {
-                        page_crossed = false;
                         sem.wait();
                     }
                 }
@@ -302,7 +300,6 @@ void CPU::run(Memory& memory)
                     sem.wait();
                     if (page_crossed)
                     {
-                        page_crossed = false;
                         sem.wait();
                     }
                 }
@@ -361,7 +358,6 @@ void CPU::run(Memory& memory)
                     sem.wait();
                     if (page_crossed)
                     {
-                        page_crossed = false;
                         sem.wait();
                     }
                 }
@@ -378,7 +374,6 @@ void CPU::run(Memory& memory)
                     sem.wait();
                     if (page_crossed)
                     {
-                        page_crossed = false;
                         sem.wait();
                     }
                 }
@@ -408,42 +403,101 @@ void CPU::run(Memory& memory)
                     sem.wait();
                     if (page_crossed)
                     {
-                        page_crossed = false;
                         sem.wait();
                     }
                 }
                 break;
 
+            case INSTR_6502_STA_ZERO_PAGE:
+                {
+                    Byte data_address = get_data_zero_page(memory);
+                    IP++;
+                    
+                    memory[data_address] = A;
+                    sem.wait();
+                    sem.wait();
+                }
+                break;
+
+            case INSTR_6502_STA_ZERO_PAGE_X:
+                {
+                    Byte data_address = get_data_zero_page(memory, X);
+                    IP++;
+                    
+                    memory[data_address] = A;
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                }
+                break;
+
             case INSTR_6502_STA_ABSOLUTE:
                 {
-                    // Load address
-                    Word data_address = get_word(memory);
-                    sem.wait();
+                    Word data_address = get_data_absolute(memory);
                     IP++;
-                    sem.wait();
                     IP++;
 
-                    // Set value of memory address to A.
-                    set_byte(memory, data_address, A);
+                    memory[data_address] = A;
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                }
+                break;
+
+            case INSTR_6502_STA_ABSOLUTE_X:
+                {
+                    Word data_address = get_data_absolute(memory, X);
+                    IP++;
+                    IP++;
+
+                    memory[data_address] = A;
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
                     sem.wait();
                 }
                 break;
 
             case INSTR_6502_STA_ABSOLUTE_Y:
                 {
-                    // get address in next two bytes
-                    Word target_address = get_word(memory);
-                    sem.wait();
+                    Word data_address = get_data_absolute(memory, Y);
                     IP++;
-                    sem.wait();
                     IP++;
 
-                    // Add Y to address
-                    target_address += Y;
+                    memory[data_address] = A;
                     sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                }
+                break;
 
-                    // Store A in address
-                    memory[target_address] = A;
+            case INSTR_6502_STA_INDIRECT_X:
+                {
+                    Byte data_address = get_data_indexed_indirect(memory, X);
+                    IP++;
+                    IP++;
+
+                    memory[data_address] = A;
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                }
+                break;
+
+            case INSTR_6502_STA_INDIRECT_Y:
+                {
+                    Byte data_address = get_data_indirect_indexed(memory, X);
+                    IP++;
+                    IP++;
+
+                    memory[data_address] = A;
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
+                    sem.wait();
                     sem.wait();
                 }
                 break;
@@ -465,19 +519,6 @@ void CPU::run(Memory& memory)
                 Z = (A == 0);
                 N = (A & 0x80);
                 sem.wait();
-                break;
-
-            case INSTR_6502_STA_ZEROPAGE:
-                {
-                    // get address
-                    Byte data_address = get_byte(memory);
-                    sem.wait();
-                    IP++;
-                    
-                    // get data from address
-                    set_byte(memory, data_address, A);
-                    sem.wait();
-                }
                 break;
 
             case INSTR_6502_STX_ABSOLUTE:
@@ -866,7 +907,6 @@ void CPU::run(Memory& memory)
                     sem.wait();
                     if (page_crossed)
                     {
-                        page_crossed = false;
                         sem.wait();
                     }
                 }
@@ -883,7 +923,6 @@ void CPU::run(Memory& memory)
                     sem.wait();
                     if (page_crossed)
                     {
-                        page_crossed = false;
                         sem.wait();
                     }
                 }
@@ -913,7 +952,6 @@ void CPU::run(Memory& memory)
                     sem.wait();
                     if (page_crossed)
                     {
-                        page_crossed = false;
                         sem.wait();
                     }
                 }

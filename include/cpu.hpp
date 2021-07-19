@@ -55,9 +55,13 @@ class CPU
     const static Byte INSTR_6502_LDY_IMMEDIATE = 0xA0;       // 2, Load byte from next memory location into Y.
 
     // STA - STore A in memory
-    const static Byte INSTR_6502_STA_ZEROPAGE = 0x85;        // 3, Load accumulator from following memory pointer.
+    const static Byte INSTR_6502_STA_ZERO_PAGE = 0x85;       // 3, Load accumulator from following memory pointer.
+    const static Byte INSTR_6502_STA_ZERO_PAGE_X = 0x95;     // 4
     const static Byte INSTR_6502_STA_ABSOLUTE = 0x8D;        // 4, Store contents of A in 16-bit memory address.
-    const static Byte INSTR_6502_STA_ABSOLUTE_Y = 0x99;      // 3, Store contents of Y in following 16-bit address.
+    const static Byte INSTR_6502_STA_ABSOLUTE_X = 0x9D;      // 5, Store contents of Y in following 16-bit address.
+    const static Byte INSTR_6502_STA_ABSOLUTE_Y = 0x99;      // 5, Store contents of Y in following 16-bit address.
+    const static Byte INSTR_6502_STA_INDIRECT_X = 0x81;      // 6, Store contents of Y in following 16-bit address.
+    const static Byte INSTR_6502_STA_INDIRECT_Y = 0x91;      // 6, Store contents of Y in following 16-bit address.
 
     // STX - STore X in memory
     const static Byte INSTR_6502_STX_ABSOLUTE = 0x8E;        // 4, Store contents of X in 16-bit memory address.
