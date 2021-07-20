@@ -197,10 +197,49 @@ void CPU::run(Memory& memory)
                 break;
 
             case INSTR_6502_LDY_IMMEDIATE:
-                Y = get_byte(memory);
+                Y = get_data_immediate(memory);
                 IP++;
                 LDY_set_CPU_flags();
                 sem.wait();
+                break;
+
+            case INSTR_6502_LDY_ZERO_PAGE:
+                Y = get_data_zero_page(memory);
+                IP++;
+                LDY_set_CPU_flags();
+                sem.wait();
+                sem.wait();
+                break;
+
+            case INSTR_6502_LDY_ZERO_PAGE_X:
+                Y = get_data_zero_page(memory, X);
+                IP++;
+                LDY_set_CPU_flags();
+                sem.wait();
+                sem.wait();
+                sem.wait();
+                break;
+
+            case INSTR_6502_LDY_ABSOLUTE:
+                Y = get_data_absolute(memory);
+                IP++;
+                LDY_set_CPU_flags();
+                sem.wait();
+                sem.wait();
+                sem.wait();
+                break;
+
+            case INSTR_6502_LDY_ABSOLUTE_X:
+                Y = get_data_absolute(memory, X);
+                IP++;
+                LDY_set_CPU_flags();
+                sem.wait();
+                sem.wait();
+                sem.wait();
+                if (page_crossed)
+                {
+                    sem.wait();
+                }
                 break;
 
             case INSTR_6502_CMP_IMMEDIATE:

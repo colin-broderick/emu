@@ -52,7 +52,11 @@ class CPU
     const static Byte INSTR_6502_EOR_INDIRECT_Y  = 0x51;     // 5+
 
     // LDY - LoaD Y register
-    const static Byte INSTR_6502_LDY_IMMEDIATE = 0xA0;       // 2, Load byte from next memory location into Y.
+    const static Byte INSTR_6502_LDY_IMMEDIATE   = 0xA0;     // 2, Load byte from next memory location into Y.
+    const static Byte INSTR_6502_LDY_ZERO_PAGE   = 0xA4;     // 3, Load byte from next memory location into Y.
+    const static Byte INSTR_6502_LDY_ZERO_PAGE_X = 0xB4;     // 4, Load byte from next memory location into Y.
+    const static Byte INSTR_6502_LDY_ABSOLUTE    = 0xAC;     // 4, Load byte from next memory location into Y.
+    const static Byte INSTR_6502_LDY_ABSOLUTE_X  = 0xBC;     // 4+, Load byte from next memory location into Y.
 
     // STA - STore A in memory
     const static Byte INSTR_6502_STA_ZERO_PAGE   = 0x85;     // 3, Load accumulator from following memory pointer.
