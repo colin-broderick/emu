@@ -223,6 +223,7 @@ void CPU::run(Memory& memory)
             case INSTR_6502_LDY_ABSOLUTE:
                 Y = get_data_absolute(memory);
                 IP++;
+                IP++;
                 LDY_set_CPU_flags();
                 sem.wait();
                 sem.wait();
@@ -231,6 +232,7 @@ void CPU::run(Memory& memory)
 
             case INSTR_6502_LDY_ABSOLUTE_X:
                 Y = get_data_absolute(memory, X);
+                IP++;
                 IP++;
                 LDY_set_CPU_flags();
                 sem.wait();
@@ -433,113 +435,83 @@ void CPU::run(Memory& memory)
                 break;
 
             case INSTR_6502_EOR_INDIRECT_Y:
+                A = A ^ get_data_indirect_indexed(memory, Y);
+                IP++;
+                EOR_set_CPU_flags();
+                sem.wait();
+                sem.wait();
+                sem.wait();
+                sem.wait();
+                if (page_crossed)
                 {
-                    A = A ^ get_data_indirect_indexed(memory, Y);
-                    IP++;
-                    EOR_set_CPU_flags();
                     sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    if (page_crossed)
-                    {
-                        sem.wait();
-                    }
                 }
                 break;
 
             case INSTR_6502_STA_ZERO_PAGE:
-                {
-                    Byte data_address = get_data_zero_page(memory);
-                    IP++;
-                    
-                    memory[data_address] = A;
-                    sem.wait();
-                    sem.wait();
-                }
+                set_data_zero_page(memory, A);
+                IP++;
+                sem.wait();
+                sem.wait();
                 break;
 
             case INSTR_6502_STA_ZERO_PAGE_X:
-                {
-                    Byte data_address = get_data_zero_page(memory, X);
-                    IP++;
-                    
-                    memory[data_address] = A;
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                }
+                set_data_zero_page(memory, A, X);
+                IP++;
+                sem.wait();
+                sem.wait();
+                sem.wait();
                 break;
 
             case INSTR_6502_STA_ABSOLUTE:
-                {
-                    Word data_address = get_data_absolute(memory);
-                    IP++;
-                    IP++;
-
-                    memory[data_address] = A;
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                }
+                set_data_absolute(memory, A);
+                IP++;
+                IP++;
+                sem.wait();
+                sem.wait();
+                sem.wait();
                 break;
 
             case INSTR_6502_STA_ABSOLUTE_X:
-                {
-                    Word data_address = get_data_absolute(memory, X);
-                    IP++;
-                    IP++;
-
-                    memory[data_address] = A;
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                }
+                set_data_absolute(memory, A, X);
+                IP++;
+                IP++;
+                sem.wait();
+                sem.wait();
+                sem.wait();
+                sem.wait();
                 break;
 
             case INSTR_6502_STA_ABSOLUTE_Y:
-                {
-                    Word data_address = get_data_absolute(memory, Y);
-                    IP++;
-                    IP++;
-
-                    memory[data_address] = A;
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                }
+                set_data_absolute(memory, A, Y);
+                IP++;
+                IP++;
+                sem.wait();
+                sem.wait();
+                sem.wait();
+                sem.wait();
                 break;
 
             case INSTR_6502_STA_INDIRECT_X:
-                {
-                    Byte data_address = get_data_indexed_indirect(memory, X);
-                    IP++;
-                    IP++;
-
-                    memory[data_address] = A;
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                }
+                set_data_indexed_indirect(memory, A, X);
+                IP++;
+                IP++;
+                sem.wait();
+                sem.wait();
+                sem.wait();
+                sem.wait();
+                sem.wait();
                 break;
 
             case INSTR_6502_STA_INDIRECT_Y:
-                {
-                    Byte data_address = get_data_indirect_indexed(memory, X);
-                    IP++;
-                    IP++;
-
-                    memory[data_address] = A;
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                }
+                set_data_indirect_indexed(memory, A, Y);
+                IP++;
+                IP++;
+                sem.wait();
+                sem.wait();
+                sem.wait();
+                sem.wait();
+                sem.wait();
                 break;
 
             case INSTR_6502_TXS:
@@ -562,34 +534,37 @@ void CPU::run(Memory& memory)
                 sem.wait();
                 break;
 
-            case INSTR_6502_STX_ABSOLUTE:
-                {
-                    // Load address
-                    Word data_address = get_word(memory);
-                    sem.wait();
-                    IP++;
-                    sem.wait();
-                    IP++;
+            case INSTR_6502_STX_ZERO_PAGE:
+                set_data_zero_page(memory, X);
+                IP++;
+                sem.wait();
+                sem.wait();
+                break;
 
-                    // Set value of memory address to A.
-                    set_byte(memory, data_address, X);
-                    sem.wait();
-                }
+            case INSTR_6502_STX_ZERO_PAGE_Y:
+                set_data_absolute(memory, X, Y);
+                IP++;
+                sem.wait();
+                sem.wait();
+                sem.wait();
+                break;
+
+            case INSTR_6502_STX_ABSOLUTE:
+                set_data_absolute(memory, X);
+                IP++;
+                IP++;
+                sem.wait();
+                sem.wait();
+                sem.wait();
                 break;
 
             case INSTR_6502_STY_ABSOLUTE:
-                {
-                    // Load address
-                    Word data_address = get_word(memory);
-                    sem.wait();
-                    IP++;
-                    sem.wait();
-                    IP++;
-
-                    // Set value of memory address to A.
-                    set_byte(memory, data_address, Y);
-                    sem.wait();
-                }
+                set_data_absolute(memory, Y);
+                IP++;
+                IP++;
+                sem.wait();
+                sem.wait();
+                sem.wait();
                 break;
 
             case INSTR_6502_TAX:
@@ -1477,6 +1452,47 @@ Byte CPU::get_data_absolute(Memory& memory)
     return get_byte(memory, address);
 }
 
+/** \brief Sets a value in memory.
+ * \param memory Reference to system memory.
+ * \param data A byte of data to store in the 16-bit address at the current instruction pointer.
+ */
+void CPU::set_data_absolute(Memory& memory, Byte data)
+{
+    Word address = get_word(memory);
+    memory[address] = data;
+}
+
+/** \brief Sets a value in memory.
+ * \param memory Reference to system memory.
+ * \param data A byte of data to store in the 16-bit address at the current instruction pointer.
+ */
+void CPU::set_data_absolute(Memory& memory, Byte data, Byte index)
+{
+    Word address = get_word(memory) + index;
+    memory[address] = data;
+}
+
+/** \brief Sets a value in memory.
+ * \param memory Reference to system memory.
+ * \param data A byte of data to store in the 8-bit (zero page) address at the current instruction pointer.
+ */
+void CPU::set_data_zero_page(Memory& memory, Byte data)
+{
+    Byte data_address = get_byte(memory);
+    memory[data_address] = data;
+}
+
+/** \brief Sets a value in memory.
+ * \param memory Reference to system memory.
+ * \param data A byte of data to store in the 8-bit (zero page) address at the current instruction pointer.
+ * \param index Offset from the memory location read by the instruction pointer.
+ */
+void CPU::set_data_zero_page(Memory& memory, Byte data, Byte index)
+{
+    Byte data_address = get_byte(memory) + index;
+    memory[data_address] = data;
+}
+
 /** \brief Get data byte from memory using absolute addressing, with data addressed by 
  * current instruction pointer and an index.
  * \param memory Reference to system memory.
@@ -1583,7 +1599,20 @@ Byte CPU::get_data_indexed_indirect(Memory& memory, const Byte index)
     return get_byte(memory, target_address);
 }
 
+/** \brief Set a value in memory using (indirect, x) addressing.
+ * \param memory Reference to system memory.
+ * \param data Byte of data to store in memory.
+ * \param index Offset of memory location.
+ */
+void CPU::set_data_indexed_indirect(Memory& memory, Byte data, Byte index)
+{
+    Byte indirect_address = get_byte(memory) + index;
+    Word target_address = get_word_zpg_wrap(memory, indirect_address);
+    memory[target_address] = data;
+}
+
 /** \brief Get data from memory using the (indirect),y addressing mode.
+ * Will set the page_crossed flag if a page is crossed.
  * \param memory Reference to system memory.
  * \param index Index to add to address.
  * \return 8-bit value from memory.
@@ -1607,6 +1636,18 @@ Byte CPU::get_data_indirect_indexed(Memory& memory, const Byte index)
 
     //get data from target address and return
     return get_byte(memory, target_address);
+}
+
+/** \brief Sets a value in memory.
+ * \param memory Reference to system memory.
+ * \param data A byte of data to store in memory.
+ * \param index Memory location offset.
+ */
+void CPU::set_data_indirect_indexed(Memory& memory, const Byte data, const Byte index)
+{
+    Byte indirect_address = get_byte(memory);
+    Word target_address = get_word_zpg_wrap(memory, indirect_address) + index;
+    memory[target_address] = data;
 }
 
 /** \brief Adds the signed value distance to the IP.

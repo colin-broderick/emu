@@ -68,7 +68,9 @@ class CPU
     const static Byte INSTR_6502_STA_INDIRECT_Y  = 0x91;     // 6, Store contents of Y in following 16-bit address.
 
     // STX - STore X in memory
-    const static Byte INSTR_6502_STX_ABSOLUTE = 0x8E;        // 4, Store contents of X in 16-bit memory address.
+    const static Byte INSTR_6502_STX_ZERO_PAGE   = 0x86;     // 3, Store contents of X in 16-bit memory address.
+    const static Byte INSTR_6502_STX_ZERO_PAGE_Y = 0x96;     // 4, Store contents of X in 16-bit memory address.
+    const static Byte INSTR_6502_STX_ABSOLUTE    = 0x8E;     // 4, Store contents of X in 16-bit memory address.
 
     // STY - STore Y in memory
     const static Byte INSTR_6502_STY_ABSOLUTE = 0x8C;        // 4, Store contents of Y in 16-bit memory address.
@@ -245,6 +247,13 @@ class CPU
         Byte get_data_zero_page(Memory& memory, const Byte index);
         Byte get_data_indexed_indirect(Memory& memory, const Byte index);   //(Indirect,X) uses IP as indirect address
         Byte get_data_indirect_indexed(Memory& memory, const Byte index);   //(Indirect),Y uses IP as indirect address
+
+        void set_data_absolute(Memory& memory, Byte data);
+        void set_data_absolute(Memory& memory, Byte data, Byte index);
+        void set_data_zero_page(Memory& memory, Byte data);
+        void set_data_zero_page(Memory& memory, Byte data, Byte index);
+        void set_data_indexed_indirect(Memory& memory, Byte data, Byte index);
+        void set_data_indirect_indexed(Memory& memory, const Byte data, const Byte index);
 
         Byte flags_as_byte();
 
