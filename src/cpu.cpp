@@ -28,18 +28,9 @@ void CPU::LDA_set_CPU_flags()
 void CPU::CMP_set_CPU_flags(Byte data_from_memory)
 {
     Word difference = static_cast<Word>(A - data_from_memory);
-    if (A >= data_from_memory)
-    {
-        C = true;
-    }
-    if (A == data_from_memory)
-    {
-        Z = true;
-    }
-    if (difference & 0x80)
-    {
-        N = true;
-    }
+    C = (A >= data_from_memory);
+    Z = (A == data_from_memory);
+    N = (difference & 0x80);
 }
 
 /** \brief Sets appropriate CPU flags following an EOR operation. */
@@ -117,7 +108,7 @@ void CPU::run(Memory& memory)
                 break;
 
             case INSTR_6502_LDA_ZEROPAGE:
-                A = get_data_zero_page(memory);
+                A = get_data_zeropage(memory);
                 IP++;
                 LDA_set_CPU_flags();
                 sem.wait();
@@ -125,7 +116,7 @@ void CPU::run(Memory& memory)
                 break;
 
             case INSTR_6502_LDA_ZEROPAGE_X:
-                A = get_data_zero_page(memory, X);
+                A = get_data_zeropage(memory, X);
                 IP++;
                 LDA_set_CPU_flags();
                 sem.wait();
@@ -203,16 +194,16 @@ void CPU::run(Memory& memory)
                 sem.wait();
                 break;
 
-            case INSTR_6502_LDY_ZERO_PAGE:
-                Y = get_data_zero_page(memory);
+            case INSTR_6502_LDY_ZEROPAGE:
+                Y = get_data_zeropage(memory);
                 IP++;
                 LDY_set_CPU_flags();
                 sem.wait();
                 sem.wait();
                 break;
 
-            case INSTR_6502_LDY_ZERO_PAGE_X:
-                Y = get_data_zero_page(memory, X);
+            case INSTR_6502_LDY_ZEROPAGE_X:
+                Y = get_data_zeropage(memory, X);
                 IP++;
                 LDY_set_CPU_flags();
                 sem.wait();
@@ -253,9 +244,9 @@ void CPU::run(Memory& memory)
                 }
                 break;
 
-            case INSTR_6502_CMP_ZERO_PAGE:
+            case INSTR_6502_CMP_ZEROPAGE:
                 {
-                    Byte data = get_data_zero_page(memory);
+                    Byte data = get_data_zeropage(memory);
                     IP++;
                     CMP_set_CPU_flags(data);
                     sem.wait();
@@ -263,9 +254,9 @@ void CPU::run(Memory& memory)
                 }
                 break;
 
-            case INSTR_6502_CMP_ZERO_PAGE_X:
+            case INSTR_6502_CMP_ZEROPAGE_X:
                 {
-                    Byte data = get_data_zero_page(memory, X);
+                    Byte data = get_data_zeropage(memory, X);
                     IP++;
                     CMP_set_CPU_flags(data);
                     sem.wait();
@@ -348,76 +339,64 @@ void CPU::run(Memory& memory)
                 break;
 
             case INSTR_6502_EOR_IMMEDIATE:
-                {
-                    A = A ^ get_data_immediate(memory);
-                    IP++;
-                    EOR_set_CPU_flags();
-                    sem.wait();
-                }
+                A = A ^ get_data_immediate(memory);
+                IP++;
+                EOR_set_CPU_flags();
+                sem.wait();
                 break;
 
-            case INSTR_6502_EOR_ZERO_PAGE:
-                {
-                    A = A ^ get_data_zero_page(memory);
-                    IP++;
-                    EOR_set_CPU_flags();
-                    sem.wait();
-                    sem.wait();
-                }
+            case INSTR_6502_EOR_ZEROPAGE:
+                A = A ^ get_data_zeropage(memory);
+                IP++;
+                EOR_set_CPU_flags();
+                sem.wait();
+                sem.wait();
                 break;
 
-            case INSTR_6502_EOR_ZERO_PAGE_X:
-                {
-                    A = A ^ get_data_zero_page(memory, X);
-                    IP++;
-                    EOR_set_CPU_flags();
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                }
+            case INSTR_6502_EOR_ZEROPAGE_X:
+                A = A ^ get_data_zeropage(memory, X);
+                IP++;
+                EOR_set_CPU_flags();
+                sem.wait();
+                sem.wait();
+                sem.wait();
                 break;
 
             case INSTR_6502_EOR_ABSOLUTE:
-                {
-                    A = A ^ get_data_absolute(memory);
-                    IP++;
-                    IP++;
-                    EOR_set_CPU_flags();
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                }
+                A = A ^ get_data_absolute(memory);
+                IP++;
+                IP++;
+                EOR_set_CPU_flags();
+                sem.wait();
+                sem.wait();
+                sem.wait();
                 break;
 
             case INSTR_6502_EOR_ABSOLUTE_X:
+                A = A ^ get_data_absolute(memory, X);
+                IP++;
+                IP++;
+                EOR_set_CPU_flags();
+                sem.wait();
+                sem.wait();
+                sem.wait();
+                if (page_crossed)
                 {
-                    A = A ^ get_data_absolute(memory, X);
-                    IP++;
-                    IP++;
-                    EOR_set_CPU_flags();
                     sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    if (page_crossed)
-                    {
-                        sem.wait();
-                    }
                 }
                 break;
 
             case INSTR_6502_EOR_ABSOLUTE_Y:
+                A = A ^ get_data_absolute(memory, Y);
+                IP++;
+                IP++;
+                EOR_set_CPU_flags();
+                sem.wait();
+                sem.wait();
+                sem.wait();
+                if (page_crossed)
                 {
-                    A = A ^ get_data_absolute(memory, Y);
-                    IP++;
-                    IP++;
-                    EOR_set_CPU_flags();
                     sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    if (page_crossed)
-                    {
-                        sem.wait();
-                    }
                 }
                 break;
 
@@ -448,15 +427,15 @@ void CPU::run(Memory& memory)
                 }
                 break;
 
-            case INSTR_6502_STA_ZERO_PAGE:
-                set_data_zero_page(memory, A);
+            case INSTR_6502_STA_ZEROPAGE:
+                set_data_zeropage(memory, A);
                 IP++;
                 sem.wait();
                 sem.wait();
                 break;
 
-            case INSTR_6502_STA_ZERO_PAGE_X:
-                set_data_zero_page(memory, A, X);
+            case INSTR_6502_STA_ZEROPAGE_X:
+                set_data_zeropage(memory, A, X);
                 IP++;
                 sem.wait();
                 sem.wait();
@@ -534,14 +513,14 @@ void CPU::run(Memory& memory)
                 sem.wait();
                 break;
 
-            case INSTR_6502_STX_ZERO_PAGE:
-                set_data_zero_page(memory, X);
+            case INSTR_6502_STX_ZEROPAGE:
+                set_data_zeropage(memory, X);
                 IP++;
                 sem.wait();
                 sem.wait();
                 break;
 
-            case INSTR_6502_STX_ZERO_PAGE_Y:
+            case INSTR_6502_STX_ZEROPAGE_Y:
                 set_data_absolute(memory, X, Y);
                 IP++;
                 sem.wait();
@@ -845,43 +824,30 @@ void CPU::run(Memory& memory)
                 break;
 
             case INSTR_6502_ORA_INDIRECT_X:
-                {
-                    // Read next byte to get indirect address and jump over it
-                    Byte indirect_address = get_byte(memory) + X;
-                    sem.wait();
-                    IP++;
-
-                    // Get the data from other address
-                    Word target_address = get_word(memory, indirect_address);
-                    sem.wait();
-
-                    // Get the data to be ORed with A.
-                    Byte data = get_byte(memory, target_address);
-                    sem.wait();
-
-                    // Do the OR, putting result in A.
-                    A |= data;
-                    sem.wait();
-
-                    ORA_set_CPU_flags();
-                    sem.wait();
-                }
+                A |= get_data_indexed_indirect(memory, X);
+                IP++;
+                ORA_set_CPU_flags();
+                sem.wait();
+                sem.wait();
+                sem.wait();
+                sem.wait();
+                sem.wait();
                 break;
 
             case INSTR_6502_ADC_IMMEDIATE:
                 {
                     // TODO: Explain this. What I've done is mostly based on
                     // http://www.righto.com/2012/12/the-6502-overflow-flag-explained.html
-                    Byte data = get_byte(memory);
+                    Byte data = get_data_immediate(memory);
                     IP++;
                     A = add_with_carry(data);
                     sem.wait();
                 }
                 break;
 
-            case INSTR_6502_ADC_ZERO_PAGE:
+            case INSTR_6502_ADC_ZEROPAGE:
                 {
-                    Byte data = get_data_zero_page(memory);
+                    Byte data = get_data_zeropage(memory);
                     IP++;
                     A = add_with_carry(data);
                     sem.wait();
@@ -889,9 +855,9 @@ void CPU::run(Memory& memory)
                 }
                 break;
 
-            case INSTR_6502_ADC_ZERO_PAGE_X:
+            case INSTR_6502_ADC_ZEROPAGE_X:
                 {
-                    Byte data = get_data_zero_page(memory, X);
+                    Byte data = get_data_zeropage(memory, X);
                     IP++;
                     A = add_with_carry(data);
                     sem.wait();
@@ -1075,11 +1041,11 @@ void CPU::run(Memory& memory)
                 break;
             
             case INSTR_6502_JMP_ABSOLUTE:
-                {
-                    IP = get_word(memory);
-                    sem.wait();
-                    sem.wait();
-                }
+                // TODO I don't know if I'm supposed to jump to the address in memory at the IP,
+                // or the address specified by that memory location.
+                IP = get_word(memory);
+                sem.wait();
+                sem.wait();
                 break;
 
             case INSTR_6502_INC_ABSOLUTE:
@@ -1163,198 +1129,89 @@ void CPU::run(Memory& memory)
                 break;
             
             case INSTR_6502_AND_IMMEDIATE:
-                {
-                    Byte operand = get_byte(memory);
-                    A = A & operand;
-                    if (A == 0)
-                    {
-                        Z = true;
-                    }
-                    if (A & 0b10000000)
-                    {
-                        N = true;
-                    }
-                    sem.wait();
-                    IP++;
-                }
+                A &= get_data_immediate(memory);
+                IP++;
+                AND_set_CPU_flags();
+                sem.wait();
                 break;
 
             case INSTR_6502_AND_ZEROPAGE_X:
-                {
-                    //get address, add X, wrap if necessary
-                    Byte lookup_address = (get_byte(memory) + X) & 0xff;
-                    Byte operand = get_byte(memory, lookup_address);
-                    IP++;
-                    A = A & operand;
-                    if (A == 0)
-                    {
-                        Z = true;
-                    }
-                    if (A & 0b10000000)
-                    {
-                        N = true;
-                    }
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                }
+                A &= get_data_zeropage(memory, X);
+                IP++;
+                AND_set_CPU_flags();
+                sem.wait();
+                sem.wait();
+                sem.wait();
                 break;
 
             case INSTR_6502_AND_ZEROPAGE:
-                {
-                    Byte lookup_address = get_byte(memory);
-                    Byte operand = get_byte(memory, lookup_address);
-                    IP++;
-                    A = A & operand;
-                    if (A == 0)
-                    {
-                        Z = true;
-                    }
-                    if (A & 0b10000000)
-                    {
-                        N = true;
-                    }
-                    sem.wait();
-                    sem.wait();
-                }
+                A &= get_data_zeropage(memory);
+                IP++;
+                AND_set_CPU_flags();
+                sem.wait();
+                sem.wait();
                 break;
 
             case INSTR_6502_AND_ABSOLUTE:
-                {
-                    Word lookup_address = get_word(memory);
-                    Byte operand = get_byte(memory, lookup_address);
-                    IP++;
-                    IP++;
-                    A = A & operand;
-                    if (A == 0)
-                    {
-                        Z = true;
-                    }
-                    if (A & 0b10000000)
-                    {
-                        N = true;
-                    }
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                }
+                A &= get_data_absolute(memory);
+                IP++;
+                IP++;
+                AND_set_CPU_flags();
+                sem.wait();
+                sem.wait();
+                sem.wait();
                 break;
             
             case INSTR_6502_AND_ABSOLUTE_X:
+                A &= get_data_absolute(memory, X);
+                IP++;
+                IP++;
+                AND_set_CPU_flags();
+                sem.wait();
+                sem.wait();
+                sem.wait();
+                if (page_crossed) 
                 {
-                    Word lookup_address = get_word(memory);
-                    Word old_page = lookup_address & 0xFF00;
-                    lookup_address += X;
-                    Word new_page = lookup_address & 0xFF00;
-                    Byte operand = get_byte(memory, lookup_address);
-                    IP++;
-                    IP++;
-                    A = A & operand;
-                    if (A == 0)
-                    {
-                        Z = true;
-                    }
-                    if (A & 0b10000000)
-                    {
-                        N = true;
-                    }
                     sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    if (old_page != new_page) 
-                    {
-                        sem.wait();
-                    }
                 }
                 break;
             
             case INSTR_6502_AND_ABSOLUTE_Y:
+                A &= get_data_absolute(memory, Y);
+                IP++;
+                IP++;
+                AND_set_CPU_flags();
+                sem.wait();
+                sem.wait();
+                sem.wait();
+                if (page_crossed)
                 {
-                    Word lookup_address = get_word(memory);
-                    Word old_page = lookup_address & 0xFF00;
-                    lookup_address += Y;
-                    Word new_page = lookup_address & 0xFF00;
-                    Byte operand = get_byte(memory, lookup_address);
-                    IP++;
-                    IP++;
-                    A = A & operand;
-                    if (A == 0)
-                    {
-                        Z = true;
-                    }
-                    if (A & 0b10000000)
-                    {
-                        N = true;
-                    }
                     sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    if (old_page != new_page) 
-                    {
-                        sem.wait();
-                    }
                 }
                 break;
             
             case INSTR_6502_AND_INDIRECT_X:
-                {
-                    // read next byte and add X without carry
-                    Byte indirect_address = get_byte(memory) + X;
-                    IP++;
-
-                    //get target address from indirect_address data and next on zero page
-                    Word target_address = get_word_zpg_wrap(memory, indirect_address);
-
-                    // get data from target address
-                    Byte operand = get_byte(memory, target_address);
-
-                    //complete operation
-                    A = A & operand;
-                    if (A == 0)
-                    {
-                        Z = true;
-                    }
-                    if (A & 0b10000000)
-                    {
-                        N = true;
-                    }
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                }
+                A &= get_data_indexed_indirect(memory, X);
+                IP++;
+                AND_set_CPU_flags();
+                sem.wait();
+                sem.wait();
+                sem.wait();
+                sem.wait();
+                sem.wait();
                 break;
             
             case INSTR_6502_AND_INDIRECT_Y:
+                A &= get_data_indirect_indexed(memory, Y);
+                IP++;
+                AND_set_CPU_flags();
+                sem.wait();
+                sem.wait();
+                sem.wait();
+                sem.wait();
+                if (page_crossed)
                 {
-                    Byte indirect_address = get_byte(memory);
-                    IP++;
-                    Word target_address = get_word_zpg_wrap(memory, indirect_address);
-                    Byte page1 = static_cast<Byte>(target_address >> 8);
-                    target_address += Y;
-                    Byte page2 = static_cast<Byte>(target_address >> 8);
-
-                    Byte operand = get_byte(memory, target_address);
-
-                    //complete operation
-                    A = A & operand;
-                    if (A == 0)
-                    {
-                        Z = true;
-                    }
-                    if (A & 0b10000000)
-                    {
-                        N = true;
-                    }
                     sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    if (page1 != page2)
-                    {
-                        sem.wait();
-                    }
                 }
                 break;
 
@@ -1476,7 +1333,7 @@ void CPU::set_data_absolute(Memory& memory, Byte data, Byte index)
  * \param memory Reference to system memory.
  * \param data A byte of data to store in the 8-bit (zero page) address at the current instruction pointer.
  */
-void CPU::set_data_zero_page(Memory& memory, Byte data)
+void CPU::set_data_zeropage(Memory& memory, Byte data)
 {
     Byte data_address = get_byte(memory);
     memory[data_address] = data;
@@ -1487,7 +1344,7 @@ void CPU::set_data_zero_page(Memory& memory, Byte data)
  * \param data A byte of data to store in the 8-bit (zero page) address at the current instruction pointer.
  * \param index Offset from the memory location read by the instruction pointer.
  */
-void CPU::set_data_zero_page(Memory& memory, Byte data, Byte index)
+void CPU::set_data_zeropage(Memory& memory, Byte data, Byte index)
 {
     Byte data_address = get_byte(memory) + index;
     memory[data_address] = data;
@@ -1553,7 +1410,7 @@ Byte CPU::get_data_immediate(Memory& memory)
  * \param memory A reference to a memory array object.
  * \return A Byte from memory.
  */
-Byte CPU::get_data_zero_page(Memory& memory)
+Byte CPU::get_data_zeropage(Memory& memory)
 {
     Byte data_address = get_byte(memory);
     return get_byte(memory, data_address);
@@ -1564,7 +1421,7 @@ Byte CPU::get_data_zero_page(Memory& memory)
  * \param index An index into a memory region.
  * \return A Byte from memory.
  */
-Byte CPU::get_data_zero_page(Memory& memory, const Byte index)
+Byte CPU::get_data_zeropage(Memory& memory, const Byte index)
 {
     Byte data_address = get_byte(memory) + index;
     return get_byte(memory, data_address);
@@ -1708,4 +1565,10 @@ std::ostream& operator<<(std::ostream& stream, const CPU& cpu)
     stream << (int)cpu.Z;
     stream << (int)cpu.C;
     return stream;
+}
+
+/** \brief Set CPU flags following an AND operation. */
+void CPU::AND_set_CPU_flags()
+{
+    LDA_set_CPU_flags();
 }

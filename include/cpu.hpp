@@ -11,30 +11,34 @@ class CPU
     /********** 6502 opcodes in format: Instruction name = instruction byte // num cycles, description. ************************/
 
     // LDA - LoaD Accumulator
+    // Load a byte from memory into the accumulator.
     // Set Z if A == 0.
     // Set N if bit 7 of A is on.
-    const static Byte INSTR_6502_LDA_IMMEDIATE  = 0xA9;      // 2, Load next byte into A.
-    const static Byte INSTR_6502_LDA_ZEROPAGE   = 0xA5;      // 3, Load from zero page address in next byte into A.
-    const static Byte INSTR_6502_LDA_ZEROPAGE_X = 0xB5;      // 4, Load from (zero page addres + X) in next byte into A.
-    const static Byte INSTR_6502_LDA_ABSOLUTE   = 0xAD;      // 4, Load from a 16-bit address, contained in next two bytes.
+    const static Byte INSTR_6502_LDA_IMMEDIATE  = 0xA9;      // 2
+    const static Byte INSTR_6502_LDA_ZEROPAGE   = 0xA5;      // 3
+    const static Byte INSTR_6502_LDA_ZEROPAGE_X = 0xB5;      // 4
+    const static Byte INSTR_6502_LDA_ABSOLUTE   = 0xAD;      // 4
     const static Byte INSTR_6502_LDA_ABSOLUTE_X = 0xBD;      // 4+
     const static Byte INSTR_6502_LDA_ABSOLUTE_Y = 0xB9;      // 4+
     const static Byte INSTR_6502_LDA_INDIRECT_X = 0xA1;      // 6
     const static Byte INSTR_6502_LDA_INDIRECT_Y = 0xB1;      // 5+
 
-    // LDX - LoaD X register
+    // LDX - LoaD X
+    // Load a byte from memory into the X register.
     // Set Z if X == 0.
     // Set N if bit 7 of X is on.
-    const static Byte INSTR_6502_LDX_IMMEDIATE  = 0xA2;      // 2, Load byte from next memory location into X.
+    const static Byte INSTR_6502_LDX_IMMEDIATE  = 0xA2;      //
     const static Byte INSTR_6502_LDX_ZEROPAGE   = 0xA6;
     const static Byte INSTR_6502_LDX_ZEROPAGE_Y = 0xB6;
     const static Byte INSTR_6502_LDX_ABSOLUTE   = 0xAE;
     const static Byte INSTR_6502_LDX_ABOLUTE_Y  = 0xBE;
 
-    // CMP - CoMPare accumulator to value from memory.
+    // CMP - CoMPare
+    // Compare the accumulator to a byte from memory.
+    // TODO What registers are affected?
     const static Byte INSTR_6502_CMP_IMMEDIATE   = 0xC9;     // 2
-    const static Byte INSTR_6502_CMP_ZERO_PAGE   = 0xC5;     // 3
-    const static Byte INSTR_6502_CMP_ZERO_PAGE_X = 0xD5;     // 4
+    const static Byte INSTR_6502_CMP_ZEROPAGE    = 0xC5;     // 3
+    const static Byte INSTR_6502_CMP_ZEROPAGE_X  = 0xD5;     // 4
     const static Byte INSTR_6502_CMP_ABSOLUTE    = 0xCD;     // 4
     const static Byte INSTR_6502_CMP_ABSOLUTE_X  = 0xDD;     // 4+
     const static Byte INSTR_6502_CMP_ABSOLUTE_Y  = 0xD9;     // 4+
@@ -43,8 +47,8 @@ class CPU
 
     // EOR - Exclusive OR of accumulator with value from memory.
     const static Byte INSTR_6502_EOR_IMMEDIATE   = 0x49;     // 2
-    const static Byte INSTR_6502_EOR_ZERO_PAGE   = 0x45;     // 3
-    const static Byte INSTR_6502_EOR_ZERO_PAGE_X = 0x55;     // 4
+    const static Byte INSTR_6502_EOR_ZEROPAGE    = 0x45;     // 3
+    const static Byte INSTR_6502_EOR_ZEROPAGE_X  = 0x55;     // 4
     const static Byte INSTR_6502_EOR_ABSOLUTE    = 0x4D;     // 4
     const static Byte INSTR_6502_EOR_ABSOLUTE_X  = 0x5D;     // 4+
     const static Byte INSTR_6502_EOR_ABSOLUTE_Y  = 0x59;     // 4+
@@ -53,14 +57,14 @@ class CPU
 
     // LDY - LoaD Y register
     const static Byte INSTR_6502_LDY_IMMEDIATE   = 0xA0;     // 2, Load byte from next memory location into Y.
-    const static Byte INSTR_6502_LDY_ZERO_PAGE   = 0xA4;     // 3, Load byte from next memory location into Y.
-    const static Byte INSTR_6502_LDY_ZERO_PAGE_X = 0xB4;     // 4, Load byte from next memory location into Y.
+    const static Byte INSTR_6502_LDY_ZEROPAGE    = 0xA4;     // 3, Load byte from next memory location into Y.
+    const static Byte INSTR_6502_LDY_ZEROPAGE_X  = 0xB4;     // 4, Load byte from next memory location into Y.
     const static Byte INSTR_6502_LDY_ABSOLUTE    = 0xAC;     // 4, Load byte from next memory location into Y.
     const static Byte INSTR_6502_LDY_ABSOLUTE_X  = 0xBC;     // 4+, Load byte from next memory location into Y.
 
     // STA - STore A in memory
-    const static Byte INSTR_6502_STA_ZERO_PAGE   = 0x85;     // 3, Load accumulator from following memory pointer.
-    const static Byte INSTR_6502_STA_ZERO_PAGE_X = 0x95;     // 4
+    const static Byte INSTR_6502_STA_ZEROPAGE    = 0x85;     // 3, Load accumulator from following memory pointer.
+    const static Byte INSTR_6502_STA_ZEROPAGE_X  = 0x95;     // 4
     const static Byte INSTR_6502_STA_ABSOLUTE    = 0x8D;     // 4, Store contents of A in 16-bit memory address.
     const static Byte INSTR_6502_STA_ABSOLUTE_X  = 0x9D;     // 5, Store contents of Y in following 16-bit address.
     const static Byte INSTR_6502_STA_ABSOLUTE_Y  = 0x99;     // 5, Store contents of Y in following 16-bit address.
@@ -68,8 +72,8 @@ class CPU
     const static Byte INSTR_6502_STA_INDIRECT_Y  = 0x91;     // 6, Store contents of Y in following 16-bit address.
 
     // STX - STore X in memory
-    const static Byte INSTR_6502_STX_ZERO_PAGE   = 0x86;     // 3, Store contents of X in 16-bit memory address.
-    const static Byte INSTR_6502_STX_ZERO_PAGE_Y = 0x96;     // 4, Store contents of X in 16-bit memory address.
+    const static Byte INSTR_6502_STX_ZEROPAGE    = 0x86;     // 3, Store contents of X in 16-bit memory address.
+    const static Byte INSTR_6502_STX_ZEROPAGE_Y  = 0x96;     // 4, Store contents of X in 16-bit memory address.
     const static Byte INSTR_6502_STX_ABSOLUTE    = 0x8E;     // 4, Store contents of X in 16-bit memory address.
 
     // STY - STore Y in memory
@@ -87,8 +91,8 @@ class CPU
 
     // ADC - ADd with Carry
     const static Byte INSTR_6502_ADC_IMMEDIATE   = 0x69;     // 2, Add to A with carry and all sorts of flag nonsense.
-    const static Byte INSTR_6502_ADC_ZERO_PAGE   = 0x65;     // 3, Add to A with carry and all sorts of flag nonsense.
-    const static Byte INSTR_6502_ADC_ZERO_PAGE_X = 0x75;     // 4, Add to A with carry and all sorts of flag nonsense.
+    const static Byte INSTR_6502_ADC_ZEROPAGE    = 0x65;     // 3, Add to A with carry and all sorts of flag nonsense.
+    const static Byte INSTR_6502_ADC_ZEROPAGE_X  = 0x75;     // 4, Add to A with carry and all sorts of flag nonsense.
     const static Byte INSTR_6502_ADC_ABSOLUTE    = 0x6D;     // 4, Add to A with carry and all sorts of flag nonsense.
     const static Byte INSTR_6502_ADC_ABSOLUTE_X  = 0x7D;     // 4+, Add to A with carry and all sorts of flag nonsense.
     const static Byte INSTR_6502_ADC_ABSOLUTE_Y  = 0x79;     // 4+, Add to A with carry and all sorts of flag nonsense.
@@ -203,6 +207,7 @@ class CPU
 
     private:
         void LDA_set_CPU_flags();
+        void AND_set_CPU_flags();
         void CMP_set_CPU_flags(Byte data_from_memory);
         void EOR_set_CPU_flags();
         void LDX_set_CPU_flags();
@@ -229,8 +234,17 @@ class CPU
 
         // Setters --------------------------------------------------------------------------------------------------------------
         void set_byte(Memory& memory, Word address, Byte value);
+        
+        void set_data_absolute(Memory& memory, Byte data);
+        void set_data_absolute(Memory& memory, Byte data, Byte index);
+        void set_data_zeropage(Memory& memory, Byte data);
+        void set_data_zeropage(Memory& memory, Byte data, Byte index);
+        void set_data_indexed_indirect(Memory& memory, Byte data, Byte index);
+        void set_data_indirect_indexed(Memory& memory, const Byte data, const Byte index);
 
         // Getters --------------------------------------------------------------------------------------------------------------
+        Byte flags_as_byte();
+        
         Byte get_byte(Memory& memory);
         Byte get_byte(Memory& memory, const Byte address);
         Byte get_byte(Memory& memory, const Word address);
@@ -243,22 +257,15 @@ class CPU
         Byte get_data_absolute(Memory& memory, const Byte index);
         Byte get_data_relative(Memory& memory);
         Byte get_data_immediate(Memory& memory);
-        Byte get_data_zero_page(Memory& memory);
-        Byte get_data_zero_page(Memory& memory, const Byte index);
+        Byte get_data_zeropage(Memory& memory);
+        Byte get_data_zeropage(Memory& memory, const Byte index);
         Byte get_data_indexed_indirect(Memory& memory, const Byte index);   //(Indirect,X) uses IP as indirect address
         Byte get_data_indirect_indexed(Memory& memory, const Byte index);   //(Indirect),Y uses IP as indirect address
 
-        void set_data_absolute(Memory& memory, Byte data);
-        void set_data_absolute(Memory& memory, Byte data, Byte index);
-        void set_data_zero_page(Memory& memory, Byte data);
-        void set_data_zero_page(Memory& memory, Byte data, Byte index);
-        void set_data_indexed_indirect(Memory& memory, Byte data, Byte index);
-        void set_data_indirect_indexed(Memory& memory, const Byte data, const Byte index);
-
-        Byte flags_as_byte();
-
         // General --------------------------------------------------------------------------------------------------------------
         void run(Memory& memory);
+
+        friend std::ostream& operator<<(std::ostream& stream, const CPU& cpu);
 };
 
 std::ostream& operator<<(std::ostream& stream, const CPU& cpu);
