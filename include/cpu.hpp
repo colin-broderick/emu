@@ -267,6 +267,7 @@ class CPU
 
         // Constructors ---------------------------------------------------------------------------------------------------------
         CPU();
+        CPU(const unsigned int ip, const unsigned int sp);
 
         // Setters --------------------------------------------------------------------------------------------------------------
         void set_byte(Memory& memory, Word address, Byte value);

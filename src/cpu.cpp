@@ -20,6 +20,17 @@ CPU::CPU()
     C = Z = I = D = B = V = N = false;
 }
 
+/** \brief CPU constructor which allows custom setting of IP and SP.
+ * \param ip The starting instruction pointer.
+ * \param sp The starting stack pointer.
+ */
+CPU::CPU(const unsigned int ip, const unsigned int sp)
+{
+    IP = static_cast<Word>(ip);
+    SP = static_cast<Word>(sp);
+    C = Z = I = D = B = V = N = false;
+}
+
 /** \brief Sets appropriate flags after performing LDA operations. */
 void CPU::LDA_set_CPU_flags()
 {
