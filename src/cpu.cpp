@@ -1480,13 +1480,13 @@ Byte CPU::get_data_indirect_indexed(Memory& memory, const Byte index)
     Byte indirect_address = get_byte(memory);
 
     //get target address from indirect_address data and next on zero page and add index
-    Word target_address = get_word_zpg_wrap(memory, indirect_address) + index;
+    Word target_address = get_word_zpg_wrap(memory, indirect_address);
+    Byte page1 = static_cast<Byte>(target_address >> 8);
+    target_address += index;
+    Byte page2 = static_cast<Byte>(target_address >> 8);
 
-    // TODO I'm pretty sure this is completely wrong! Consider it a placeholder.
     // Check if page crossed.
-    Byte current_page = static_cast<Byte>(IP >> 8);
-    Byte data_page = static_cast<Byte>(target_address >> 8);
-    if (current_page != data_page)
+    if (page1 != page2)
     {
         page_crossed = true;
     }
