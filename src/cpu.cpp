@@ -3,9 +3,14 @@
 
 #include "cpu.hpp"
 #include "memory.hpp"
-#include "semaphore.hpp"
 
 #define DEBUG 1
+
+#if DEBUG
+#define LOG(x) std::cout << x << std::endl
+#else
+
+#endif
 
 /** \brief CPU constructor; sets initial configuration including IP, SP, flags, etc. */
 CPU::CPU()
@@ -74,14 +79,16 @@ void CPU::TXA_set_CPU_flags()
 /** \brief Runs the loaded program while CPU cycles are available to spend.
  * \param memory A reference to the main memory of the system. The CPU reads and writes this memory.
  */
-void CPU::run(Memory& memory)
+int CPU::run(Memory& memory, const int cycles)
 {
-    while (true)
+    add_cycles(cycles);
+    
+    while (cycles_available > 0)
     {
-        #if DEBUG
-        std::cout << *this << "\n";
-        std::cout << memory << "\n";
-        #endif
+        // #if DEBUG
+        // std::cout << *this << "\n";
+        // std::cout << memory << "\n";
+        // #endif
 
         // Reset the page crossing flag in case it was left on from the last iteration.
         page_crossed = false;
@@ -91,12 +98,10 @@ void CPU::run(Memory& memory)
         // Grab an instruction from RAM.
         Byte instruction = get_byte(memory);
 
-        // What we just did costs a single CPU cycle, so consume one cycle.
-        // We don't continue from here until another CPU cycle becomes available.
-        sem.wait();
-
         // We increment the instruction pointer to point to the next byte in memory.
         IP++;
+
+        LOG(instruction_names[instruction] << " " << IP);
 
         switch (instruction)
         {
@@ -104,24 +109,21 @@ void CPU::run(Memory& memory)
                 A = get_data_immediate(memory);
                 IP++;
                 LDA_set_CPU_flags();
-                sem.wait();
+                use_cycles(2);
                 break;
 
             case INSTR_6502_LDA_ZEROPAGE:
                 A = get_data_zeropage(memory);
                 IP++;
                 LDA_set_CPU_flags();
-                sem.wait();
-                sem.wait();
+                use_cycles(3);
                 break;
 
             case INSTR_6502_LDA_ZEROPAGE_X:
                 A = get_data_zeropage(memory, X);
                 IP++;
                 LDA_set_CPU_flags();
-                sem.wait();
-                sem.wait();
-                sem.wait();
+                use_cycles(4);
                 break;
 
             case INSTR_6502_LDA_ABSOLUTE:
@@ -129,9 +131,7 @@ void CPU::run(Memory& memory)
                 IP++;
                 IP++;
                 LDA_set_CPU_flags();
-                sem.wait();
-                sem.wait();
-                sem.wait();
+                use_cycles(4);
                 break;
 
             case INSTR_6502_LDA_ABSOLUTE_X:
@@ -139,12 +139,10 @@ void CPU::run(Memory& memory)
                 IP++;
                 IP++;
                 LDA_set_CPU_flags();
-                sem.wait();
-                sem.wait();
-                sem.wait();
+                use_cycles(4);
                 if (page_crossed)
                 {
-                    sem.wait();
+                    use_cycles(1);
                 }
                 break;
 
@@ -153,12 +151,10 @@ void CPU::run(Memory& memory)
                 IP++;
                 IP++;
                 LDA_set_CPU_flags();
-                sem.wait();
-                sem.wait();
-                sem.wait();
+                use_cycles(4);
                 if (page_crossed)
                 {
-                    sem.wait();
+                    use_cycles(1);
                 }
                 break;
             
@@ -166,24 +162,17 @@ void CPU::run(Memory& memory)
                 A = get_data_indexed_indirect(memory, X);
                 IP++;
                 LDA_set_CPU_flags();
-                sem.wait();
-                sem.wait();
-                sem.wait();
-                sem.wait();
-                sem.wait();
+                use_cycles(6);
                 break;
 
             case INSTR_6502_LDA_INDIRECT_Y:
                 A = get_data_indirect_indexed(memory, Y);
                 IP++;
                 LDA_set_CPU_flags();
-                sem.wait();
-                sem.wait();
-                sem.wait();
-                sem.wait();
+                use_cycles(5);
                 if (page_crossed)
                 {
-                    sem.wait();
+                    use_cycles(1);
                 }
                 break;
 
@@ -191,24 +180,21 @@ void CPU::run(Memory& memory)
                 Y = get_data_immediate(memory);
                 IP++;
                 LDY_set_CPU_flags();
-                sem.wait();
+                use_cycles(2);
                 break;
 
             case INSTR_6502_LDY_ZEROPAGE:
                 Y = get_data_zeropage(memory);
                 IP++;
                 LDY_set_CPU_flags();
-                sem.wait();
-                sem.wait();
+                use_cycles(3);
                 break;
 
             case INSTR_6502_LDY_ZEROPAGE_X:
                 Y = get_data_zeropage(memory, X);
                 IP++;
                 LDY_set_CPU_flags();
-                sem.wait();
-                sem.wait();
-                sem.wait();
+                use_cycles(4);
                 break;
 
             case INSTR_6502_LDY_ABSOLUTE:
@@ -216,9 +202,7 @@ void CPU::run(Memory& memory)
                 IP++;
                 IP++;
                 LDY_set_CPU_flags();
-                sem.wait();
-                sem.wait();
-                sem.wait();
+                use_cycles(4);
                 break;
 
             case INSTR_6502_LDY_ABSOLUTE_X:
@@ -226,12 +210,10 @@ void CPU::run(Memory& memory)
                 IP++;
                 IP++;
                 LDY_set_CPU_flags();
-                sem.wait();
-                sem.wait();
-                sem.wait();
+                use_cycles(4);
                 if (page_crossed)
                 {
-                    sem.wait();
+                    use_cycles(1);
                 }
                 break;
 
@@ -240,7 +222,7 @@ void CPU::run(Memory& memory)
                     Byte data = get_data_immediate(memory);
                     IP++;
                     CMP_set_CPU_flags(data);
-                    sem.wait();
+                    use_cycles(2);
                 }
                 break;
 
@@ -249,8 +231,7 @@ void CPU::run(Memory& memory)
                     Byte data = get_data_zeropage(memory);
                     IP++;
                     CMP_set_CPU_flags(data);
-                    sem.wait();
-                    sem.wait();
+                    use_cycles(3);
                 }
                 break;
 
@@ -259,9 +240,7 @@ void CPU::run(Memory& memory)
                     Byte data = get_data_zeropage(memory, X);
                     IP++;
                     CMP_set_CPU_flags(data);
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
+                    use_cycles(4);
                 }
                 break;
 
@@ -271,9 +250,7 @@ void CPU::run(Memory& memory)
                     IP++;
                     IP++;
                     CMP_set_CPU_flags(data);
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
+                    use_cycles(4);
                 }
                 break;
 
@@ -283,12 +260,10 @@ void CPU::run(Memory& memory)
                     IP++;
                     IP++;
                     CMP_set_CPU_flags(data);
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
+                    use_cycles(4);
                     if (page_crossed)
                     {
-                        sem.wait();
+                        use_cycles(1);
                     }
                 }
                 break;
@@ -299,12 +274,10 @@ void CPU::run(Memory& memory)
                     IP++;
                     IP++;
                     CMP_set_CPU_flags(data);
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
+                    use_cycles(4);
                     if (page_crossed)
                     {
-                        sem.wait();
+                        use_cycles(1);
                     }
                 }
                 break;
@@ -314,11 +287,7 @@ void CPU::run(Memory& memory)
                     Byte data = get_data_indexed_indirect(memory, X);
                     IP++;
                     CMP_set_CPU_flags(data);
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
+                    use_cycles(6);
                 }
                 break;
 
@@ -327,13 +296,10 @@ void CPU::run(Memory& memory)
                     Byte data = get_data_indirect_indexed(memory, Y);
                     IP++;
                     CMP_set_CPU_flags(data);
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
+                    use_cycles(5);
                     if (page_crossed)
                     {
-                        sem.wait();
+                        use_cycles(1);
                     }
                 }
                 break;
@@ -342,24 +308,21 @@ void CPU::run(Memory& memory)
                 A = A ^ get_data_immediate(memory);
                 IP++;
                 EOR_set_CPU_flags();
-                sem.wait();
+                use_cycles(2);
                 break;
 
             case INSTR_6502_EOR_ZEROPAGE:
                 A = A ^ get_data_zeropage(memory);
                 IP++;
                 EOR_set_CPU_flags();
-                sem.wait();
-                sem.wait();
+                use_cycles(3);
                 break;
 
             case INSTR_6502_EOR_ZEROPAGE_X:
                 A = A ^ get_data_zeropage(memory, X);
                 IP++;
                 EOR_set_CPU_flags();
-                sem.wait();
-                sem.wait();
-                sem.wait();
+                use_cycles(4);
                 break;
 
             case INSTR_6502_EOR_ABSOLUTE:
@@ -367,9 +330,7 @@ void CPU::run(Memory& memory)
                 IP++;
                 IP++;
                 EOR_set_CPU_flags();
-                sem.wait();
-                sem.wait();
-                sem.wait();
+                use_cycles(4);
                 break;
 
             case INSTR_6502_EOR_ABSOLUTE_X:
@@ -377,12 +338,10 @@ void CPU::run(Memory& memory)
                 IP++;
                 IP++;
                 EOR_set_CPU_flags();
-                sem.wait();
-                sem.wait();
-                sem.wait();
+                use_cycles(4);
                 if (page_crossed)
                 {
-                    sem.wait();
+                    use_cycles(1);
                 }
                 break;
 
@@ -391,12 +350,10 @@ void CPU::run(Memory& memory)
                 IP++;
                 IP++;
                 EOR_set_CPU_flags();
-                sem.wait();
-                sem.wait();
-                sem.wait();
+                use_cycles(4);
                 if (page_crossed)
                 {
-                    sem.wait();
+                    use_cycles(1);
                 }
                 break;
 
@@ -405,11 +362,7 @@ void CPU::run(Memory& memory)
                     A = A ^ get_data_indexed_indirect(memory, X);
                     IP++;
                     EOR_set_CPU_flags();
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
+                    use_cycles(6);
                 }
                 break;
 
@@ -417,85 +370,63 @@ void CPU::run(Memory& memory)
                 A = A ^ get_data_indirect_indexed(memory, Y);
                 IP++;
                 EOR_set_CPU_flags();
-                sem.wait();
-                sem.wait();
-                sem.wait();
-                sem.wait();
+                use_cycles(5);
                 if (page_crossed)
                 {
-                    sem.wait();
+                    use_cycles(1);
                 }
                 break;
 
             case INSTR_6502_STA_ZEROPAGE:
                 set_data_zeropage(memory, A);
                 IP++;
-                sem.wait();
-                sem.wait();
+                use_cycles(3);
                 break;
 
             case INSTR_6502_STA_ZEROPAGE_X:
                 set_data_zeropage(memory, A, X);
                 IP++;
-                sem.wait();
-                sem.wait();
-                sem.wait();
+                use_cycles(4);
                 break;
 
             case INSTR_6502_STA_ABSOLUTE:
                 set_data_absolute(memory, A);
                 IP++;
                 IP++;
-                sem.wait();
-                sem.wait();
-                sem.wait();
+                use_cycles(4);
                 break;
 
             case INSTR_6502_STA_ABSOLUTE_X:
                 set_data_absolute(memory, A, X);
                 IP++;
                 IP++;
-                sem.wait();
-                sem.wait();
-                sem.wait();
-                sem.wait();
+                use_cycles(5);
                 break;
 
             case INSTR_6502_STA_ABSOLUTE_Y:
                 set_data_absolute(memory, A, Y);
                 IP++;
                 IP++;
-                sem.wait();
-                sem.wait();
-                sem.wait();
-                sem.wait();
+                use_cycles(5);
                 break;
 
             case INSTR_6502_STA_INDIRECT_X:
                 set_data_indexed_indirect(memory, A, X);
                 IP++;
                 IP++;
-                sem.wait();
-                sem.wait();
-                sem.wait();
-                sem.wait();
-                sem.wait();
+                use_cycles(6);
                 break;
 
             case INSTR_6502_STA_INDIRECT_Y:
                 set_data_indirect_indexed(memory, A, Y);
                 IP++;
                 IP++;
-                sem.wait();
-                sem.wait();
-                sem.wait();
-                sem.wait();
-                sem.wait();
+                use_cycles(6);
                 break;
 
             case INSTR_6502_TXS:
                 SP = X;
-                sem.wait();
+                use_cycles(2);
                 break;
 
             case INSTR_6502_TSX:
@@ -503,99 +434,92 @@ void CPU::run(Memory& memory)
                 X = static_cast<Byte>(SP & 0x00FF);
                 Z = (X == 0);
                 N = (X & 0x80);
-                sem.wait();
+                use_cycles(2);
                 break;
 
             case INSTR_6502_TYA:
                 A = Y;
                 Z = (A == 0);
                 N = (A & 0x80);
-                sem.wait();
+                use_cycles(2);
                 break;
 
             case INSTR_6502_STX_ZEROPAGE:
                 set_data_zeropage(memory, X);
                 IP++;
-                sem.wait();
-                sem.wait();
+                use_cycles(3);
                 break;
 
             case INSTR_6502_STX_ZEROPAGE_Y:
                 set_data_absolute(memory, X, Y);
                 IP++;
-                sem.wait();
-                sem.wait();
-                sem.wait();
+                use_cycles(4);
                 break;
 
             case INSTR_6502_STX_ABSOLUTE:
                 set_data_absolute(memory, X);
                 IP++;
                 IP++;
-                sem.wait();
-                sem.wait();
-                sem.wait();
+                use_cycles(4);
                 break;
 
             case INSTR_6502_STY_ABSOLUTE:
                 set_data_absolute(memory, Y);
                 IP++;
                 IP++;
-                sem.wait();
-                sem.wait();
-                sem.wait();
+                use_cycles(4);
                 break;
 
             case INSTR_6502_TAX:
                 // Copy A into X.
                 X = A;
                 TAX_set_CPU_flags();
-                sem.wait();
+                use_cycles(2);
                 break;
 
             case INSTR_6502_TAY:
                 Y = A;
                 Z = (Y == 0);
                 N = (Y & 0x80);
-                sem.wait();
+                use_cycles(4);
 
             case INSTR_6502_TXA:
                 A = X;
                 TXA_set_CPU_flags();
-                sem.wait();
+                use_cycles(2);
                 break;
 
             case INSTR_6502_INX:
                 // Increment X.
                 X++;
                 LDX_set_CPU_flags();
-                sem.wait();
+                use_cycles(2);
                 break;
 
             case INSTR_6502_INY:
                 Y++;
                 LDY_set_CPU_flags();
-                sem.wait();
+                use_cycles(2);
                 break;
 
             case INSTR_6502_LDX_IMMEDIATE:
                 // Load data into X.
                 X = get_byte(memory);
                 LDX_set_CPU_flags();
-                sem.wait();
+                use_cycles(2);
                 IP++;
                 break;
 
             case INSTR_6502_DEX:
                 X--;
                 LDX_set_CPU_flags();
-                sem.wait();
+                use_cycles(2);
                 break;
 
             case INSTR_6502_DEY:
                 Y--;
                 LDY_set_CPU_flags();
-                sem.wait();
+                use_cycles(2);
                 break;
 
             case INSTR_6502_CPX_IMMEDIATE:
@@ -613,7 +537,7 @@ void CPU::run(Memory& memory)
                             N = true;
                         }
                     }
-                    sem.wait();
+                    use_cycles(2);
                     IP++;
                 }
                 break;
@@ -633,7 +557,7 @@ void CPU::run(Memory& memory)
                             N = true;
                         }
                     }
-                    sem.wait();
+                    use_cycles(2);
                     IP++;
                 }
                 break;
@@ -642,13 +566,13 @@ void CPU::run(Memory& memory)
                 {
                     // Remember the starting page so we know if we've moved to a new page.
                     Byte current_page = static_cast<Byte>(IP >> 8);
-                    sem.wait();
+                    use_cycles(2);
 
                     if (!Z)
                     {
                         Byte dist = get_byte(memory);
                         branch_relative(dist);
-                        sem.wait();
+                        use_cycles(1);
                     }
                     IP++;
 
@@ -656,8 +580,7 @@ void CPU::run(Memory& memory)
                     Byte new_page = static_cast<Byte>(IP >> 8);
                     if (current_page != new_page)
                     {
-                        sem.wait();
-                        sem.wait();
+                        use_cycles(2);
                     }
                 }
                 break;
@@ -666,13 +589,13 @@ void CPU::run(Memory& memory)
                 {
                     // Remember the starting page so we know if we've moved to a new page.
                     Byte current_page = static_cast<Byte>(IP >> 8);
-                    sem.wait();
+                    use_cycles(2);
 
                     if (Z)
                     {
                         Byte dist = get_byte(memory);
                         branch_relative(dist);
-                        sem.wait();
+                        use_cycles(1);
                     }
                     IP++;
 
@@ -680,8 +603,7 @@ void CPU::run(Memory& memory)
                     Byte new_page = static_cast<Byte>(IP >> 8);
                     if (current_page != new_page)
                     {
-                        sem.wait();
-                        sem.wait();
+                        use_cycles(2);
                     }
                 }
                 break;
@@ -689,21 +611,20 @@ void CPU::run(Memory& memory)
             case INSTR_6502_BMI_RELATIVE:
                 {
                     Byte current_page = static_cast<Byte>(IP >> 8);
-                    sem.wait();
+                    use_cycles(2);
 
                     if (N)
                     {
                         Byte dist = get_data_relative(memory);
                         branch_relative(dist);
-                        sem.wait();
+                        use_cycles(1);
                     }
                     IP++;
 
                     Byte new_page = static_cast<Byte>(IP >> 8);
                     if (current_page != new_page)
                     {
-                        sem.wait();
-                        sem.wait();
+                        use_cycles(2);
                     }
                 }
                 break;
@@ -711,21 +632,20 @@ void CPU::run(Memory& memory)
             case INSTR_6502_BPL_RELATIVE:
                 {
                     Byte current_page = static_cast<Byte>(IP >> 8);
-                    sem.wait();
+                    use_cycles(2);
 
                     if (!N)
                     {
                         Byte dist = get_data_relative(memory);
                         branch_relative(dist);
-                        sem.wait();
+                        use_cycles(1);
                     }
                     IP++;
 
                     Byte new_page = static_cast<Byte>(IP >> 8);
                     if (current_page != new_page)
                     {
-                        sem.wait();
-                        sem.wait();
+                        use_cycles(2);
                     }
                 }
                 break;
@@ -733,21 +653,20 @@ void CPU::run(Memory& memory)
             case INSTR_6502_BVC_RELATIVE:
                 {
                     Byte current_page = static_cast<Byte>(IP >> 8);
-                    sem.wait();
+                    use_cycles(2);
 
                     if (!V)
                     {
                         Byte dist = get_data_relative(memory);
                         branch_relative(dist);
-                        sem.wait();
+                        use_cycles(1);
                     }
                     IP++;
 
                     Byte new_page = static_cast<Byte>(IP >> 8);
                     if (current_page != new_page)
                     {
-                        sem.wait();
-                        sem.wait();
+                        use_cycles(2);
                     }
                 }
                 break;
@@ -755,21 +674,20 @@ void CPU::run(Memory& memory)
             case INSTR_6502_BVS_RELATIVE:
                 {
                     Byte current_page = static_cast<Byte>(IP >> 8);
-                    sem.wait();
+                    use_cycles(2);
 
                     if (V)
                     {
                         Byte dist = get_data_relative(memory);
                         branch_relative(dist);
-                        sem.wait();
+                        use_cycles(1);
                     }
                     IP++;
 
                     Byte new_page = static_cast<Byte>(IP >> 8);
                     if (current_page != new_page)
                     {
-                        sem.wait();
-                        sem.wait();
+                        use_cycles(2);
                     }
                 }
                 break;
@@ -777,21 +695,20 @@ void CPU::run(Memory& memory)
             case INSTR_6502_BCC_RELATIVE:
                 {
                     Byte current_page = static_cast<Byte>(IP >> 8);
-                    sem.wait();
+                    use_cycles(2);
 
                     if (!C)
                     {
                         Byte dist = get_data_relative(memory);
                         branch_relative(dist);
-                        sem.wait();
+                        use_cycles(1);
                     }
                     IP++;
 
                     Byte new_page = static_cast<Byte>(IP >> 8);
                     if (current_page != new_page)
                     {
-                        sem.wait();
-                        sem.wait();
+                        use_cycles(2);
                     }
                 }
                 break;
@@ -799,39 +716,34 @@ void CPU::run(Memory& memory)
             case INSTR_6502_BCS_RELATIVE:
                 {
                     Byte current_page = static_cast<Byte>(IP >> 8);
-                    sem.wait();
+                    use_cycles(2);
 
                     if (C)
                     {
                         Byte dist = get_data_relative(memory);
                         branch_relative(dist);
-                        sem.wait();
+                        use_cycles(1);
                     }
                     IP++;
 
                     Byte new_page = static_cast<Byte>(IP >> 8);
                     if (current_page != new_page)
                     {
-                        sem.wait();
-                        sem.wait();
+                        use_cycles(2);
                     }
                 }
                 break;
 
             case INSTR_6502_SED:
                 D = true;
-                sem.wait();
+                use_cycles(2);
                 break;
 
             case INSTR_6502_ORA_INDIRECT_X:
                 A |= get_data_indexed_indirect(memory, X);
                 IP++;
                 ORA_set_CPU_flags();
-                sem.wait();
-                sem.wait();
-                sem.wait();
-                sem.wait();
-                sem.wait();
+                use_cycles(6);
                 break;
 
             case INSTR_6502_ADC_IMMEDIATE:
@@ -841,7 +753,7 @@ void CPU::run(Memory& memory)
                     Byte data = get_data_immediate(memory);
                     IP++;
                     A = add_with_carry(data);
-                    sem.wait();
+                    use_cycles(2);
                 }
                 break;
 
@@ -850,8 +762,7 @@ void CPU::run(Memory& memory)
                     Byte data = get_data_zeropage(memory);
                     IP++;
                     A = add_with_carry(data);
-                    sem.wait();
-                    sem.wait();
+                    use_cycles(3);
                 }
                 break;
 
@@ -860,9 +771,7 @@ void CPU::run(Memory& memory)
                     Byte data = get_data_zeropage(memory, X);
                     IP++;
                     A = add_with_carry(data);
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
+                    use_cycles(4);
                 }
                 break;
 
@@ -872,9 +781,7 @@ void CPU::run(Memory& memory)
                     IP++;
                     IP++;
                     A = add_with_carry(data);
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
+                    use_cycles(4);
                 }
                 break;
 
@@ -884,12 +791,10 @@ void CPU::run(Memory& memory)
                     IP++;
                     IP++;
                     A = add_with_carry(data);
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
+                    use_cycles(4);
                     if (page_crossed)
                     {
-                        sem.wait();
+                        use_cycles(1);
                     }
                 }
                 break;
@@ -900,12 +805,10 @@ void CPU::run(Memory& memory)
                     IP++;
                     IP++;
                     A = add_with_carry(data);
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
+                    use_cycles(4);
                     if (page_crossed)
                     {
-                        sem.wait();
+                        use_cycles(1);
                     }
                 }
                 break;
@@ -915,11 +818,7 @@ void CPU::run(Memory& memory)
                     Byte data = get_data_indexed_indirect(memory, X);
                     IP++;
                     A = add_with_carry(data);
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
+                    use_cycles(6);
                 }
                 break;
 
@@ -928,72 +827,60 @@ void CPU::run(Memory& memory)
                     Byte data = get_data_indirect_indexed(memory, Y);
                     IP++;
                     A = add_with_carry(data);
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
+                    use_cycles(5);
                     if (page_crossed)
                     {
-                        sem.wait();
+                        use_cycles(1);
                     }
                 }
                 break;
 
             case INSTR_6502_CLD:
                 D = false;
-                sem.wait();
+                use_cycles(2);
                 break;
 
             case INSTR_6502_CLI:
                 I = false;
-                sem.wait();
+                use_cycles(2);
                 break;
 
             case INSTR_6502_CLC:
                 C = false;
-                sem.wait();
+                use_cycles(2);
                 break;
 
             case INSTR_6502_CLV:
                 V = false;
-                sem.wait();
+                use_cycles(2);
                 break;
 
             case INSTR_6502_PHA:
                 memory[SP] = A;
-                sem.wait();
                 SP--;
-                sem.wait();
+                use_cycles(3);
                 break;
 
             case INSTR_6502_PHP:
                 memory[SP] = flags_as_byte();
-                sem.wait();
                 SP--;
-                sem.wait();
+                use_cycles(3);
                 break;
 
             case INSTR_6502_PLA:
                 A = memory[SP];
-                sem.wait();
                 SP++;
-                sem.wait();
-                sem.wait();
+                use_cycles(4);
                 LDA_set_CPU_flags();
                 break;
 
             case INSTR_6502_NOP:
-                sem.wait();
+                use_cycles(2);
                 break;
 
             case INSTR_6502_BRK:
                 // TODO: Why does this take seven cycles?
-                sem.wait();
-                sem.wait();
-                sem.wait();
-                sem.wait();
-                sem.wait();
-                sem.wait();
+                use_cycles(7);
                 B = true;
 
                 memory[SP] = static_cast<Byte>(IP >> 8);
@@ -1004,7 +891,7 @@ void CPU::run(Memory& memory)
                 SP--;
 
                 std::cout << "BRK reached" << std::endl;
-                return;
+                return BREAK;
 
             case INSTR_6502_JSR_ABSOLUTE:
                 {
@@ -1016,11 +903,7 @@ void CPU::run(Memory& memory)
                     memory[SP] = static_cast<Byte>(IP & 0xFF);
                     SP--;
                     IP = target_address;
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
+                    use_cycles(6);
                 }
                 break;
 
@@ -1032,11 +915,7 @@ void CPU::run(Memory& memory)
 
                     IP = pointer + 1;
 
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
+                    use_cycles(6);
                 }
                 break;
             
@@ -1044,8 +923,7 @@ void CPU::run(Memory& memory)
                 // TODO I don't know if I'm supposed to jump to the address in memory at the IP,
                 // or the address specified by that memory location.
                 IP = get_word(memory);
-                sem.wait();
-                sem.wait();
+                use_cycles(3);
                 break;
 
             case INSTR_6502_INC_ABSOLUTE:
@@ -1056,11 +934,7 @@ void CPU::run(Memory& memory)
                     IP++;
                     N = (memory[target_address] & 0x80);  // Set N on if sign bit of result is set.
                     Z = (memory[target_address] == 0);    // Set Z on if result is zero.
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
+                    use_cycles(6);
                 }
                 break;
 
@@ -1073,12 +947,7 @@ void CPU::run(Memory& memory)
                     IP++;
                     N = (memory[target_address] & 0x80);  // Set N on if sign bit of result is set.
                     Z = (memory[target_address] == 0);    // Set Z on if result is zero.
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
+                    use_cycles(7);
                 }
                 break;
 
@@ -1090,11 +959,7 @@ void CPU::run(Memory& memory)
                     IP++;
                     N = (memory[target_address] & 0x80);  // Set N on if sign bit of result is set.
                     Z = (memory[target_address] == 0);    // Set Z on if result is zero.
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
+                    use_cycles(6);
                 }
                 break;
 
@@ -1107,12 +972,7 @@ void CPU::run(Memory& memory)
                     IP++;
                     N = (memory[target_address] & 0x80);  // Set N on if sign bit of result is set.
                     Z = (memory[target_address] == 0);    // Set Z on if result is zero.
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
+                    use_cycles(7);
                 }
                 break;
 
@@ -1121,10 +981,7 @@ void CPU::run(Memory& memory)
                     Word lookup_address = get_word(memory);
                     IP = get_word(memory, lookup_address);
 
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
-                    sem.wait();
+                    use_cycles(5);
                 }
                 break;
             
@@ -1132,24 +989,21 @@ void CPU::run(Memory& memory)
                 A &= get_data_immediate(memory);
                 IP++;
                 AND_set_CPU_flags();
-                sem.wait();
+                use_cycles(2);
                 break;
 
             case INSTR_6502_AND_ZEROPAGE_X:
                 A &= get_data_zeropage(memory, X);
                 IP++;
                 AND_set_CPU_flags();
-                sem.wait();
-                sem.wait();
-                sem.wait();
+                use_cycles(4);
                 break;
 
             case INSTR_6502_AND_ZEROPAGE:
                 A &= get_data_zeropage(memory);
                 IP++;
                 AND_set_CPU_flags();
-                sem.wait();
-                sem.wait();
+                use_cycles(3);
                 break;
 
             case INSTR_6502_AND_ABSOLUTE:
@@ -1157,9 +1011,7 @@ void CPU::run(Memory& memory)
                 IP++;
                 IP++;
                 AND_set_CPU_flags();
-                sem.wait();
-                sem.wait();
-                sem.wait();
+                use_cycles(4);
                 break;
             
             case INSTR_6502_AND_ABSOLUTE_X:
@@ -1167,12 +1019,10 @@ void CPU::run(Memory& memory)
                 IP++;
                 IP++;
                 AND_set_CPU_flags();
-                sem.wait();
-                sem.wait();
-                sem.wait();
+                use_cycles(4);
                 if (page_crossed) 
                 {
-                    sem.wait();
+                    use_cycles(1);
                 }
                 break;
             
@@ -1181,12 +1031,10 @@ void CPU::run(Memory& memory)
                 IP++;
                 IP++;
                 AND_set_CPU_flags();
-                sem.wait();
-                sem.wait();
-                sem.wait();
+                use_cycles(4);
                 if (page_crossed)
                 {
-                    sem.wait();
+                    use_cycles(1);
                 }
                 break;
             
@@ -1194,32 +1042,26 @@ void CPU::run(Memory& memory)
                 A &= get_data_indexed_indirect(memory, X);
                 IP++;
                 AND_set_CPU_flags();
-                sem.wait();
-                sem.wait();
-                sem.wait();
-                sem.wait();
-                sem.wait();
+                use_cycles(6);
                 break;
             
             case INSTR_6502_AND_INDIRECT_Y:
                 A &= get_data_indirect_indexed(memory, Y);
                 IP++;
                 AND_set_CPU_flags();
-                sem.wait();
-                sem.wait();
-                sem.wait();
-                sem.wait();
+                use_cycles(5);
                 if (page_crossed)
                 {
-                    sem.wait();
+                    use_cycles(1);
                 }
                 break;
 
             default:
                 std::cout << "Unknown instruction: 0x" << std::hex << std::setw(2) << std::setfill('0') << (int)instruction << "\n";
-                return;
+                return BREAK;
         }
     }
+    return cycles_available;
 }
 
 /** \brief Sets the value of a byte in memory, addressed by a full word.
@@ -1571,4 +1413,14 @@ std::ostream& operator<<(std::ostream& stream, const CPU& cpu)
 void CPU::AND_set_CPU_flags()
 {
     LDA_set_CPU_flags();
+}
+
+void CPU::add_cycles(int cycles_to_add)
+{
+    cycles_available += cycles_to_add;
+}
+
+void CPU::use_cycles(int cycles_to_use)
+{
+    cycles_available -= cycles_to_use;
 }

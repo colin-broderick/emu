@@ -9,20 +9,6 @@ System::System()
 {
 }
 
-/** \brief DEPRECATAED, REMOVE. Timer function. */
-inline void System::clock_function(Semaphore* cpu_sem, unsigned int cycles)
-{
-    auto time = std::chrono::system_clock::now();
-    std::chrono::milliseconds interval{100};
-
-    while (cycles--)
-    {
-        time += interval;
-        std::this_thread::sleep_until(time);
-        cpu_sem->notify();
-    }
-}
-
 /** \brief Load a standard ROM file into system memory.
  * \param filename The name of the ROM file.
  * \return bool true if load successful, otherwise bool false. TODO
@@ -169,7 +155,12 @@ void System::load_example_prog(unsigned int which)
 /** \brief Run the loaded program until it exits. */
 void System::run()
 {
-    std::thread clock_thread{clock_function, &cpu.sem, 1000};
-    cpu.run(memory);
-    clock_thread.join();
+    auto time = std::chrono::high_resolution_clock::now();
+    auto interval = std::chrono::microseconds{CPU::microseconds_per_frame};
+
+    while (cpu.run(memory, CPU::cycles_per_frame) != CPU::BREAK)
+    {
+        time += interval;
+        std::this_thread::sleep_until(time);
+    }
 }
