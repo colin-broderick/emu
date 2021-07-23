@@ -9,7 +9,7 @@
 #if DEBUG
 #define LOG(x) std::cout << x << std::endl
 #else
-
+#define LOG(x)
 #endif
 
 /** \brief CPU constructor; sets initial configuration including IP, SP, flags, etc. */
@@ -53,6 +53,25 @@ void CPU::CMP_set_CPU_flags(Byte data_from_memory)
 void CPU::EOR_set_CPU_flags()
 {
     LDA_set_CPU_flags();
+}
+
+/** \brief Sets appropriate CPU flags following a DEC operation. DEC changes the value
+ * in memory, and the N and Z flags are set against the new value.
+ * \param data_from_memory The new value of the byte in memory.
+ */
+void CPU::DEC_set_CPU_flags(Byte data_from_memory)
+{
+    N = (data_from_memory & 0x80);  // Set N on if sign bit of result is set.
+    Z = (data_from_memory == 0);    // Set Z on if result is zero.
+}
+
+/** \brief Sets appropriate CPU flags following an INC operation. INC changes the value
+ * in memory, and the N and Z flags are set against the new value.
+ * \param data_from_memory The new value of the byte in memory.
+ */
+void CPU::INC_set_CPU_flags(Byte data_from_memory)
+{
+    DEC_set_CPU_flags(data_from_memory);
 }
 
 /** \brief Sets appropriuate flags after performing ORA operation. */
@@ -436,12 +455,11 @@ int CPU::run(Memory& memory, const int cycles)
                 break;
 
             case INSTR_6502_TXS:
-                SP = X;
+                SP = 0x01FF & X;
                 use_cycles(2);
                 break;
 
             case INSTR_6502_TSX:
-                // TODO This doesn't seem right. Is says "stack register"; does that mean contents of current stack pointer address, or stack pointer itself?
                 X = static_cast<Byte>(SP & 0x00FF);
                 Z = (X == 0);
                 N = (X & 0x80);
@@ -515,10 +533,10 @@ int CPU::run(Memory& memory, const int cycles)
 
             case INSTR_6502_LDX_IMMEDIATE:
                 // Load data into X.
-                X = get_byte(memory);
+                X = get_data_immediate(memory);
+                IP++;
                 LDX_set_CPU_flags();
                 use_cycles(2);
-                IP++;
                 break;
 
             case INSTR_6502_DEX:
@@ -535,7 +553,7 @@ int CPU::run(Memory& memory, const int cycles)
 
             case INSTR_6502_CPX_IMMEDIATE:
                 {
-                    Word result = static_cast<Word>(X - get_byte(memory));
+                    Word result = static_cast<Word>(X - get_data_immediate(memory));
                     if (result >= 0)
                     {
                         C = true;
@@ -555,7 +573,7 @@ int CPU::run(Memory& memory, const int cycles)
 
             case INSTR_6502_CPY_IMMEDIATE:
                 {
-                    Word result = static_cast<Word>(Y - get_byte(memory));
+                    Word result = static_cast<Word>(Y - get_data_immediate(memory));
                     if (result >= 0)
                     {
                         C = true;
@@ -581,7 +599,7 @@ int CPU::run(Memory& memory, const int cycles)
 
                     if (!Z)
                     {
-                        Byte dist = get_byte(memory);
+                        Byte dist = get_data_relative(memory);
                         branch_relative(dist);
                         use_cycles(1);
                     }
@@ -604,7 +622,7 @@ int CPU::run(Memory& memory, const int cycles)
 
                     if (Z)
                     {
-                        Byte dist = get_byte(memory);
+                        Byte dist = get_data_relative(memory);
                         branch_relative(dist);
                         use_cycles(1);
                     }
@@ -890,7 +908,6 @@ int CPU::run(Memory& memory, const int cycles)
                 break;
 
             case INSTR_6502_BRK:
-                // TODO: Why does this take seven cycles?
                 use_cycles(7);
                 B = true;
 
@@ -939,50 +956,48 @@ int CPU::run(Memory& memory, const int cycles)
 
             case INSTR_6502_INC_ABSOLUTE:
                 {
-                    Word target_address = get_word(memory);
-                    memory[target_address]++;
+                    Byte value = get_data_absolute(memory);
+                    value++;
+                    set_data_absolute(memory, value);
                     IP++;
                     IP++;
-                    N = (memory[target_address] & 0x80);  // Set N on if sign bit of result is set.
-                    Z = (memory[target_address] == 0);    // Set Z on if result is zero.
+                    INC_set_CPU_flags(value);
                     use_cycles(6);
                 }
                 break;
 
             case INSTR_6502_INC_ABSOLUTE_X:
                 {
-                    Word target_address = get_word(memory);
-                    target_address += X;
-                    memory[target_address]++;
+                    Byte value = get_data_absolute(memory, X);
+                    value++;
+                    set_data_absolute(memory, value, X);
                     IP++;
                     IP++;
-                    N = (memory[target_address] & 0x80);  // Set N on if sign bit of result is set.
-                    Z = (memory[target_address] == 0);    // Set Z on if result is zero.
+                    INC_set_CPU_flags(value);
                     use_cycles(7);
                 }
                 break;
 
             case INSTR_6502_DEC_ABSOLUTE:
                 {
-                    Word target_address = get_word(memory);
-                    memory[target_address]--;
+                    Byte value = get_data_absolute(memory);
+                    value--;
+                    set_data_absolute(memory, value);
                     IP++;
                     IP++;
-                    N = (memory[target_address] & 0x80);  // Set N on if sign bit of result is set.
-                    Z = (memory[target_address] == 0);    // Set Z on if result is zero.
+                    DEC_set_CPU_flags(value);
                     use_cycles(6);
                 }
                 break;
 
             case INSTR_6502_DEC_ABSOLUTE_X:
                 {
-                    Word target_address = get_word(memory);
-                    target_address += X;
-                    memory[target_address]--;
+                    Byte value = get_data_absolute(memory, X);
+                    value--;
+                    set_data_absolute(memory, value, X);
                     IP++;
                     IP++;
-                    N = (memory[target_address] & 0x80);  // Set N on if sign bit of result is set.
-                    Z = (memory[target_address] == 0);    // Set Z on if result is zero.
+                    DEC_set_CPU_flags(value);
                     use_cycles(7);
                 }
                 break;
@@ -1175,6 +1190,7 @@ void CPU::set_data_absolute(Memory& memory, Byte data)
 /** \brief Sets a value in memory.
  * \param memory Reference to system memory.
  * \param data A byte of data to store in the 16-bit address at the current instruction pointer.
+ * \param index An offset from the specified memory location.
  */
 void CPU::set_data_absolute(Memory& memory, Byte data, Byte index)
 {

@@ -247,6 +247,8 @@ class CPU
         void TAX_set_CPU_flags();
         void TXA_set_CPU_flags();
         void ORA_set_CPU_flags();
+        void DEC_set_CPU_flags(Byte data_from_memory);
+        void INC_set_CPU_flags(Byte data_from_memory);
 
         void branch_relative(Byte distance);
         Byte add_with_carry(Byte data);
