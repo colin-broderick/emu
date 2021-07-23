@@ -12,6 +12,15 @@
 #define LOG(x)
 #endif
 
+#define BIT0 0b00000001
+#define BIT1 0b00000010
+#define BIT2 0b00000100
+#define BIT3 0b00001000
+#define BIT4 0b00010000
+#define BIT5 0b00100000
+#define BIT6 0b01000000
+#define BIT7 0b10000000
+
 /** \brief CPU constructor; sets initial configuration including IP, SP, flags, etc. */
 CPU::CPU()
 {
@@ -34,7 +43,7 @@ CPU::CPU(const unsigned int ip, const unsigned int sp)
 /** \brief Sets appropriate flags after performing LDA operations. */
 void CPU::LDA_set_CPU_flags()
 {
-    N = (A & 0b10000000);
+    N = (A & BIT7);
     Z = (A == 0);
 }
 
@@ -46,7 +55,7 @@ void CPU::CMP_set_CPU_flags(Byte data_from_memory)
     Word difference = static_cast<Word>(A - data_from_memory);
     C = (A >= data_from_memory);
     Z = (A == data_from_memory);
-    N = (difference & 0x80);
+    N = (difference & BIT7);
 }
 
 /** \brief Sets appropriate CPU flags following an EOR operation. */
@@ -61,7 +70,7 @@ void CPU::EOR_set_CPU_flags()
  */
 void CPU::DEC_set_CPU_flags(Byte data_from_memory)
 {
-    N = (data_from_memory & 0x80);  // Set N on if sign bit of result is set.
+    N = (data_from_memory & BIT7);  // Set N on if sign bit of result is set.
     Z = (data_from_memory == 0);    // Set Z on if result is zero.
 }
 
@@ -83,14 +92,14 @@ void CPU::ORA_set_CPU_flags()
 /** \brief Sets appropriate flags after performing LDX operations.. */
 void CPU::LDX_set_CPU_flags()
 {
-    N = (X & 0b10000000);
+    N = (X & BIT7);
     Z = (X == 0);
 }
 
 /** \brief Sets appropriate flags after performing LDY operations. */
 void CPU::LDY_set_CPU_flags()
 {
-    N = (Y & 0b10000000);
+    N = (Y & BIT7);
     Z = (Y == 0);
 }
 
@@ -131,7 +140,7 @@ int CPU::run(Memory& memory, const int cycles)
         // We increment the instruction pointer to point to the next byte in memory.
         IP++;
 
-        LOG(instruction_names[instruction] << " " << IP);
+        LOG("N" << N << " " << "V" << V << " " << "B" << B << " " << "D" << D << " " << "I" << I << " " << "Z" << Z << " " << "C" << C << "\t" << "A" << (int)A << "\t" << "X" << (int)X << "\t" << instruction_names[instruction] << " " << IP);
 
         switch (instruction)
         {
@@ -462,14 +471,14 @@ int CPU::run(Memory& memory, const int cycles)
             case INSTR_6502_TSX:
                 X = static_cast<Byte>(SP & 0x00FF);
                 Z = (X == 0);
-                N = (X & 0x80);
+                N = (X & BIT7);
                 use_cycles(2);
                 break;
 
             case INSTR_6502_TYA:
                 A = Y;
                 Z = (A == 0);
-                N = (A & 0x80);
+                N = (A & BIT7);
                 use_cycles(2);
                 break;
 
@@ -492,6 +501,18 @@ int CPU::run(Memory& memory, const int cycles)
                 use_cycles(4);
                 break;
 
+            case INSTR_6502_STY_ZEROPAGE:
+                set_data_zeropage(memory, Y);
+                IP++;
+                use_cycles(3);
+                break;
+
+            case INSTR_6502_STY_ZEROPAGE_X:
+                set_data_zeropage(memory, Y, X);
+                IP++;
+                use_cycles(4);
+                break;
+
             case INSTR_6502_STY_ABSOLUTE:
                 set_data_absolute(memory, Y);
                 IP++;
@@ -509,7 +530,7 @@ int CPU::run(Memory& memory, const int cycles)
             case INSTR_6502_TAY:
                 Y = A;
                 Z = (Y == 0);
-                N = (Y & 0x80);
+                N = (Y & BIT7);
                 use_cycles(4);
 
             case INSTR_6502_TXA:
@@ -521,13 +542,13 @@ int CPU::run(Memory& memory, const int cycles)
             case INSTR_6502_INX:
                 // Increment X.
                 X++;
-                LDX_set_CPU_flags();
+                INX_set_CPU_flags();
                 use_cycles(2);
                 break;
 
             case INSTR_6502_INY:
                 Y++;
-                LDY_set_CPU_flags();
+                INY_set_CPU_flags();
                 use_cycles(2);
                 break;
 
@@ -539,33 +560,62 @@ int CPU::run(Memory& memory, const int cycles)
                 use_cycles(2);
                 break;
 
+            case INSTR_6502_LDX_ZEROPAGE:
+                // Load data into X.
+                X = get_data_zeropage(memory);
+                IP++;
+                LDX_set_CPU_flags();
+                use_cycles(3);
+                break;
+
+            case INSTR_6502_LDX_ZEROPAGE_Y:
+                // Load data into X.
+                X = get_data_zeropage(memory, Y);
+                IP++;
+                LDX_set_CPU_flags();
+                use_cycles(4);
+                break;
+
+            case INSTR_6502_LDX_ABSOLUTE:
+                // Load data into X.
+                X = get_data_absolute(memory);
+                IP++;
+                IP++;
+                LDX_set_CPU_flags();
+                use_cycles(4);
+                break;
+
+            case INSTR_6502_LDX_ABSOLUTE_Y:
+                // Load data into X.
+                X = get_data_absolute(memory, Y);
+                IP++;
+                IP++;
+                LDX_set_CPU_flags();
+                use_cycles(4);
+                if (page_crossed)
+                {
+                    use_cycles(1);
+                }
+                break;
+
             case INSTR_6502_DEX:
                 X--;
-                LDX_set_CPU_flags();
+                DEX_set_CPU_flags();
                 use_cycles(2);
                 break;
 
             case INSTR_6502_DEY:
                 Y--;
-                LDY_set_CPU_flags();
+                DEY_set_CPU_flags();
                 use_cycles(2);
                 break;
 
             case INSTR_6502_CPX_IMMEDIATE:
                 {
-                    Word result = static_cast<Word>(X - get_data_immediate(memory));
-                    if (result >= 0)
-                    {
-                        C = true;
-                        if (result == 0)
-                        {
-                            Z = true;
-                        }
-                        if (result & 0b10000000)
-                        {
-                            N = true;
-                        }
-                    }
+                    int result = X - get_data_immediate(memory);
+                    C = (result >= 0);
+                    Z = (result == 0);
+                    N = (result & BIT7);
                     use_cycles(2);
                     IP++;
                 }
@@ -573,20 +623,33 @@ int CPU::run(Memory& memory, const int cycles)
 
             case INSTR_6502_CPY_IMMEDIATE:
                 {
-                    Word result = static_cast<Word>(Y - get_data_immediate(memory));
-                    if (result >= 0)
-                    {
-                        C = true;
-                        if (result == 0)
-                        {
-                            Z = true;
-                        }
-                        if (result & 0b10000000)
-                        {
-                            N = true;
-                        }
-                    }
+                    int result = Y - get_data_immediate(memory);
+                    C = (result >= 0);
+                    Z = (result == 0);
+                    N = (result & BIT7);
                     use_cycles(2);
+                    IP++;
+                }
+                break;
+
+            case INSTR_6502_CPY_ZEROPAGE:
+                {
+                    int result = Y - get_data_zeropage(memory);
+                    C = (result >= 0);
+                    Z = (result == 0);
+                    N = (result & BIT7);
+                    use_cycles(3);
+                    IP++;
+                }
+                break;
+
+            case INSTR_6502_CPY_ABSOLUTE:
+                {
+                    int result = Y - get_data_absolute(memory);
+                    C = (result >= 0);
+                    Z = (result == 0);
+                    N = (result & BIT7);
+                    use_cycles(4);
                     IP++;
                 }
                 break;
@@ -768,11 +831,384 @@ int CPU::run(Memory& memory, const int cycles)
                 use_cycles(2);
                 break;
 
+            case INSTR_6502_ORA_IMMEDIATE:
+                A |= get_data_immediate(memory);
+                IP++;
+                ORA_set_CPU_flags();
+                use_cycles(2);
+                break;
+
+            case INSTR_6502_ORA_ZEROPAGE:
+                A |= get_data_zeropage(memory);
+                IP++;
+                ORA_set_CPU_flags();
+                use_cycles(3);
+                break;
+
+            case INSTR_6502_ORA_ZEROPAGE_X:
+                A |= get_data_zeropage(memory, X);
+                IP++;
+                ORA_set_CPU_flags();
+                use_cycles(4);
+                break;
+
+            case INSTR_6502_ORA_ABSOLUTE:
+                A |= get_data_absolute(memory);
+                IP++;
+                IP++;
+                ORA_set_CPU_flags();
+                use_cycles(4);
+                break;
+
+            case INSTR_6502_ORA_ABSOLUTE_X:
+                A |= get_data_absolute(memory, X);
+                IP++;
+                IP++;
+                ORA_set_CPU_flags();
+                use_cycles(4);
+                if (page_crossed)
+                {
+                    use_cycles(1);
+                }
+                break;
+
+            case INSTR_6502_ORA_ABSOLUTE_Y:
+                A |= get_data_absolute(memory, Y);
+                IP++;
+                IP++;
+                ORA_set_CPU_flags();
+                use_cycles(4);
+                if (page_crossed)
+                {
+                    use_cycles(1);
+                }
+                break;
+
             case INSTR_6502_ORA_INDIRECT_X:
                 A |= get_data_indexed_indirect(memory, X);
                 IP++;
                 ORA_set_CPU_flags();
                 use_cycles(6);
+                break;
+
+            case INSTR_6502_ORA_INDIRECT_Y:
+                A |= get_data_indirect_indexed(memory, Y);
+                IP++;
+                ORA_set_CPU_flags();
+                use_cycles(5);
+                if (page_crossed)
+                {
+                    use_cycles(1);
+                }
+                break;
+
+            case INSTR_6502_BIT_ZEROPAGE:
+                {
+                    Byte result = A & get_data_zeropage(memory);
+                    IP++;
+                    Z = (result == 0);
+                    V = (result & BIT6);
+                    N = (result & BIT7);
+                    use_cycles(3);
+                }
+                break;
+
+            case INSTR_6502_BIT_ABSOLUTE:
+                {
+                    Byte result = A & get_data_absolute(memory);
+                    IP++;
+                    IP++;
+                    Z = (result == 0);
+                    V = (result & BIT6);
+                    N = (result & BIT7);
+                    use_cycles(4);
+                }
+                break;
+
+            case INSTR_6502_ASL_ACCUMULATOR:
+                C = (A & BIT7);
+                A = A << 1;
+                Z = (A == 0);
+                N = (A & BIT7);
+                use_cycles(2);
+                break;
+
+            case INSTR_6502_ASL_ZEROPAGE:
+                {
+                    Byte data = get_data_zeropage(memory);
+                    C = (data & BIT7);
+                    data = data << 1;
+                    Z = (data == 0);
+                    N = (data & BIT7);
+                    set_data_zeropage(memory, data);
+                    IP++;
+                    use_cycles(5);
+                }
+                break;
+
+            case INSTR_6502_ASL_ZEROPAGE_X:
+                {
+                    Byte data = get_data_zeropage(memory, X);
+                    C = (data & BIT7);
+                    data = data << 1;
+                    Z = (data == 0);
+                    N = (data & BIT7);
+                    set_data_zeropage(memory, data, X);
+                    IP++;
+                    use_cycles(6);
+                }
+                break;
+
+            case INSTR_6502_ASL_ABSOLUTE:
+                {
+                    Byte data = get_data_absolute(memory);
+                    C = (data & BIT7);
+                    data = data << 1;
+                    Z = (data == 0);
+                    N = (data & BIT7);
+                    set_data_absolute(memory, data);
+                    IP++;
+                    IP++;
+                    use_cycles(6);
+                }
+                break;
+
+            case INSTR_6502_ASL_ABSOLUTE_X:
+                {
+                    Byte data = get_data_absolute(memory, X);
+                    C = (data & BIT7);
+                    data = data << 1;
+                    Z = (data == 0);
+                    N = (data & BIT7);
+                    set_data_absolute(memory, data, X);
+                    IP++;
+                    IP++;
+                    use_cycles(7);
+                }
+                break;
+
+            case INSTR_6502_LSR_ACCUMULATOR:
+                C = (A & BIT7);
+                A = A >> 1;
+                Z = (A == 0);
+                N = (A & BIT7);
+                use_cycles(2);
+                break;
+
+            case INSTR_6502_LSR_ZEROPAGE:
+                {
+                    Byte data = get_data_zeropage(memory);
+                    C = (data & BIT7);
+                    data = data >> 1;
+                    Z = (data == 0);
+                    N = (data & BIT7);
+                    set_data_zeropage(memory, data);
+                    IP++;
+                    use_cycles(5);
+                }
+                break;
+
+            case INSTR_6502_LSR_ZEROPAGE_X:
+                {
+                    Byte data = get_data_zeropage(memory, X);
+                    C = (data & BIT7);
+                    data = data >> 1;
+                    Z = (data == 0);
+                    N = (data & BIT7);
+                    set_data_zeropage(memory, data, X);
+                    IP++;
+                    use_cycles(6);
+                }
+                break;
+
+            case INSTR_6502_LSR_ABSOLUTE:
+                {
+                    Byte data = get_data_absolute(memory);
+                    C = (data & BIT7);
+                    data = data >> 1;
+                    Z = (data == 0);
+                    N = (data & BIT7);
+                    set_data_absolute(memory, data);
+                    IP++;
+                    IP++;
+                    use_cycles(6);
+                }
+                break;
+
+            case INSTR_6502_LSR_ABSOLUTE_X:
+                {
+                    Byte data = get_data_absolute(memory, X);
+                    C = (data & BIT7);
+                    data = data >> 1;
+                    Z = (data == 0);
+                    N = (data & BIT7);
+                    set_data_absolute(memory, data, X);
+                    IP++;
+                    IP++;
+                    use_cycles(7);
+                }
+                break;
+
+            case INSTR_6502_ROL_ACCUMULATOR:
+                {
+                    Byte tempC = static_cast<Byte>(C);
+                    C = (A & BIT7);
+                    A = static_cast<Byte>((A << 1) | tempC);
+                    Z = (A == 0);
+                    N = (A & BIT7);
+                    use_cycles(2);
+                }
+                break;
+
+            case INSTR_6502_ROL_ZEROPAGE:
+                {
+                    Byte data = get_data_zeropage(memory);
+                    Byte tempC = static_cast<Byte>(C);
+                    C = (data & BIT7);
+                    data = static_cast<Byte>((data << 1) | tempC);
+                    Z = (data == 0);
+                    N = (data & BIT7);
+                    set_data_zeropage(memory, data);
+                    IP++;
+                    use_cycles(5);
+                }
+                break;
+
+            case INSTR_6502_ROL_ZEROPAGE_X:
+                {
+                    Byte data = get_data_zeropage(memory, X);
+                    Byte tempC = static_cast<Byte>(C);
+                    C = (data & BIT7);
+                    data = static_cast<Byte>((data << 1) | tempC);
+                    Z = (data == 0);
+                    N = (data & BIT7);
+                    set_data_zeropage(memory, data, X);
+                    IP++;
+                    use_cycles(6);
+                }
+                break;
+
+            case INSTR_6502_ROL_ABSOLUTE:
+                {
+                    Byte data = get_data_absolute(memory);
+                    Byte tempC = static_cast<Byte>(C);
+                    C = (data & BIT7);
+                    data = static_cast<Byte>((data << 1) | tempC);
+                    Z = (data == 0);
+                    N = (data & BIT7);
+                    set_data_absolute(memory, data);
+                    IP++;
+                    IP++;
+                    use_cycles(6);
+                }
+                break;
+
+            case INSTR_6502_ROL_ABSOLUTE_X:
+                {
+                    Byte data = get_data_absolute(memory, X);
+                    Byte tempC = static_cast<Byte>(C);
+                    C = (data & BIT7);
+                    data = static_cast<Byte>((data << 1) | tempC);
+                    Z = (data == 0);
+                    N = (data & BIT7);
+                    set_data_absolute(memory, data, X);
+                    IP++;
+                    IP++;
+                    use_cycles(7);
+                }
+                break;
+
+            case INSTR_6502_ROR_ACCUMULATOR:
+                {
+                    Byte tempC = static_cast<Byte>(C) << 7;
+                    C = (A & BIT0);
+                    A = (A >> 1) | tempC;
+                    Z = (A == 0);
+                    N = (A & BIT7);
+                    use_cycles(2);
+                }
+                break;
+
+            case INSTR_6502_ROR_ZEROPAGE:
+                {
+                    Byte data = get_data_zeropage(memory);
+                    Byte tempC = static_cast<Byte>(C) << 7;
+                    C = (data & BIT0);
+                    data = (data >> 1) | tempC;
+                    Z = (data == 0);
+                    N = (data & BIT7);
+                    set_data_zeropage(memory, data);
+                    IP++;
+                    use_cycles(5);
+                }
+                break;
+
+            case INSTR_6502_ROR_ZEROPAGE_X:
+                {
+                    Byte data = get_data_zeropage(memory, X);
+                    Byte tempC = static_cast<Byte>(C) << 7;
+                    C = (data & BIT0);
+                    data = (data >> 1) | tempC;
+                    Z = (data == 0);
+                    N = (data & BIT7);
+                    set_data_zeropage(memory, data, X);
+                    IP++;
+                    use_cycles(6);
+                }
+                break;
+
+            case INSTR_6502_ROR_ABSOLUTE:
+                {
+                    Byte data = get_data_absolute(memory);
+                    Byte tempC = static_cast<Byte>(C) << 7;
+                    C = (data & BIT0);
+                    data = (data >> 1) | tempC;
+                    Z = (data == 0);
+                    N = (data & BIT7);
+                    set_data_absolute(memory, data);
+                    IP++;
+                    IP++;
+                    use_cycles(6);
+                }
+                break;
+
+            case INSTR_6502_ROR_ABSOLUTE_X:
+                {
+                    Byte data = get_data_absolute(memory, X);
+                    Byte tempC = static_cast<Byte>(C) << 7;
+                    C = (data & BIT0);
+                    data = (data >> 1) | tempC;
+                    Z = (data == 0);
+                    N = (data & BIT7);
+                    set_data_absolute(memory, data, X);
+                    IP++;
+                    IP++;
+                    use_cycles(7);
+                }
+                break;
+
+            case INSTR_6502_PLP:
+                {
+                    Byte flags = pop_from_stack(memory);
+                    N = (flags >> 7) & BIT1;
+                    V = (flags >> 6) & BIT1;
+                    B = (flags >> 4) & BIT1;
+                    D = (flags >> 3) & BIT1;
+                    I = (flags >> 2) & BIT1;
+                    Z = (flags >> 1) & BIT1;
+                    C = (flags >> 0) & BIT1;
+                    use_cycles(2);
+                }
+                break;
+
+            case INSTR_6502_SEC:
+                C = true;
+                use_cycles(2);
+                break;
+
+            case INSTR_6502_SEI:
+                I = true;
+                use_cycles(2);
                 break;
 
             case INSTR_6502_ADC_IMMEDIATE:
@@ -1252,8 +1688,8 @@ Byte CPU::add_with_carry(Byte data)
     Word result = static_cast<Word>(data + A + C);
     Z = (result == 0);
     C = (result > 255);
-    N = (result & 0x80);
-    V = ((A ^ result) & (data ^ result) & 0x80) != 0;
+    N = (result & BIT7);
+    V = ((A ^ result) & (data ^ result) & BIT7) != 0;
     return static_cast<Byte>(result & 0xFF);
 }
 
@@ -1381,11 +1817,13 @@ void CPU::set_data_indirect_indexed(Memory& memory, const Byte data, const Byte 
  */
 void CPU::branch_relative(Byte distance)
 {
-    if (distance & 0x80)
+    if (distance & BIT7)
     {
+        LOG((int)distance);
         // If jump is negative get the two's complement and subtract the result.
         distance = ~distance;
         distance += 1;
+        LOG((int)distance);
         IP = IP - distance;
     }
     else
@@ -1393,6 +1831,16 @@ void CPU::branch_relative(Byte distance)
         // If the jump is positive, do the jump.
         IP = IP + distance;
     }
+}
+
+/** \brief Moves the stack pointer up by one position and returns the value found at that address.
+ * \param memory Reference to system memory.
+ * \return A byte from the stack.
+ */
+Byte CPU::pop_from_stack(Memory& memory)
+{
+    SP++;
+    return memory[SP];
 }
 
 /** \brief Encode all CPU flags into a single byte.
@@ -1408,7 +1856,7 @@ Byte CPU::flags_as_byte()
         | (D << 3) 
         | (I << 2) 
         | (Z << 1) 
-        | (C << 1)
+        | (C << 0)
     );
 }
 
@@ -1450,4 +1898,24 @@ void CPU::add_cycles(int cycles_to_add)
 void CPU::use_cycles(int cycles_to_use)
 {
     cycles_available -= cycles_to_use;
+}
+
+void CPU::DEX_set_CPU_flags()
+{
+    LDX_set_CPU_flags();
+}
+
+void CPU::INX_set_CPU_flags()
+{
+    LDX_set_CPU_flags();
+}
+
+void CPU::DEY_set_CPU_flags()
+{
+    LDY_set_CPU_flags();
+}
+
+void CPU::INY_set_CPU_flags()
+{
+    LDY_set_CPU_flags();
 }

@@ -29,11 +29,11 @@ class CPU
         // Load a byte from memory into the X register.
         // Set Z if X == 0.
         // Set N if bit 7 of X is on.
-        const static Byte INSTR_6502_LDX_IMMEDIATE  = 0xA2;      //
-        const static Byte INSTR_6502_LDX_ZEROPAGE   = 0xA6;
-        const static Byte INSTR_6502_LDX_ZEROPAGE_Y = 0xB6;
-        const static Byte INSTR_6502_LDX_ABSOLUTE   = 0xAE;
-        const static Byte INSTR_6502_LDX_ABOLUTE_Y  = 0xBE;
+        const static Byte INSTR_6502_LDX_IMMEDIATE   = 0xA2;     // 2
+        const static Byte INSTR_6502_LDX_ZEROPAGE    = 0xA6;     // 3
+        const static Byte INSTR_6502_LDX_ZEROPAGE_Y  = 0xB6;     // 4
+        const static Byte INSTR_6502_LDX_ABSOLUTE    = 0xAE;     // 4
+        const static Byte INSTR_6502_LDX_ABSOLUTE_Y  = 0xBE;     // 4+
 
         // CMP - CoMPare
         // Compare the accumulator to a byte from memory.
@@ -79,7 +79,9 @@ class CPU
         const static Byte INSTR_6502_STX_ABSOLUTE    = 0x8E;     // 4, Store contents of X in 16-bit memory address.
 
         // STY - STore Y in memory
-        const static Byte INSTR_6502_STY_ABSOLUTE = 0x8C;        // 4, Store contents of Y in 16-bit memory address.
+        const static Byte INSTR_6502_STY_ZEROPAGE   = 0x84;      // 3, Store contents of Y in 16-bit memory address.
+        const static Byte INSTR_6502_STY_ZEROPAGE_X = 0x94;      // 4, Store contents of Y in 16-bit memory address.
+        const static Byte INSTR_6502_STY_ABSOLUTE   = 0x8C;      // 4, Store contents of Y in 16-bit memory address.
 
         // TAX - Transfer A to X
         const static Byte INSTR_6502_TAX = 0xAA;                 // 2, Copies A into X.
@@ -101,6 +103,8 @@ class CPU
         const static Byte INSTR_6502_ADC_INDIRECT_X  = 0x61;     // 6, Add to A with carry and all sorts of flag nonsense.
         const static Byte INSTR_6502_ADC_INDIRECT_Y  = 0x71;     // 5, Add to A with carry and all sorts of flag nonsense.
 
+        // PLP - PuLl Processor flags from stack
+        const static Byte INSTR_6502_PLP = 0x28;                 // 4
 
         // INX - INcrement X
         const static Byte INSTR_6502_INX = 0xE8;                 // 2, Incremement the value in X.
@@ -119,6 +123,8 @@ class CPU
 
         // CPY - ComPare Y register
         const static Byte INSTR_6502_CPY_IMMEDIATE = 0xC0;       // 2, As CPX, but for Y register.
+        const static Byte INSTR_6502_CPY_ZEROPAGE  = 0xC4;       // 3, As CPX, but for Y register.
+        const static Byte INSTR_6502_CPY_ABSOLUTE  = 0xCC;       // 4, As CPX, but for Y register.
 
         // BEQ - Branch if EQual
         const static Byte INSTR_6502_BEQ_RELATIVE = 0xF0;        // 2 (+1 if branch, +2 if new page), branch if the Z flag is set.
@@ -148,10 +154,55 @@ class CPU
         const static Byte INSTR_6502_SED = 0xF8;                 // 2, Set D flag to on.
 
         // ORA - Logical inclusive or with A.
+        const static Byte INSTR_6502_ORA_IMMEDIATE  = 0x09;      // 2, Incluse OR with register A, result going into register A.
+        const static Byte INSTR_6502_ORA_ZEROPAGE   = 0x05;      // 3, Incluse OR with register A, result going into register A.
+        const static Byte INSTR_6502_ORA_ZEROPAGE_X = 0x15;      // 4, Incluse OR with register A, result going into register A.
+        const static Byte INSTR_6502_ORA_ABSOLUTE   = 0x0D;      // 4, Incluse OR with register A, result going into register A.
+        const static Byte INSTR_6502_ORA_ABSOLUTE_X = 0x1D;      // 4+, Incluse OR with register A, result going into register A.
+        const static Byte INSTR_6502_ORA_ABSOLUTE_Y = 0x19;      // 4+, Incluse OR with register A, result going into register A.
         const static Byte INSTR_6502_ORA_INDIRECT_X = 0x01;      // 6, Incluse OR with register A, result going into register A.
+        const static Byte INSTR_6502_ORA_INDIRECT_Y = 0x11;      // 5+, Incluse OR with register A, result going into register A.
+
+        // ASL - Arithmetic Shift Left
+        const static Byte INSTR_6502_ASL_ACCUMULATOR = 0x0A;     // 2
+        const static Byte INSTR_6502_ASL_ZEROPAGE    = 0x06;     // 5
+        const static Byte INSTR_6502_ASL_ZEROPAGE_X  = 0x16;     // 6
+        const static Byte INSTR_6502_ASL_ABSOLUTE    = 0x0E;     // 6
+        const static Byte INSTR_6502_ASL_ABSOLUTE_X  = 0x1E;     // 7
+
+        // LSR - Logical Shift Right
+        const static Byte INSTR_6502_LSR_ACCUMULATOR = 0x4A;     // 2
+        const static Byte INSTR_6502_LSR_ZEROPAGE    = 0x46;     // 5
+        const static Byte INSTR_6502_LSR_ZEROPAGE_X  = 0x56;     // 6
+        const static Byte INSTR_6502_LSR_ABSOLUTE    = 0x4E;     // 6
+        const static Byte INSTR_6502_LSR_ABSOLUTE_X  = 0x5E;     // 7
+
+        // ROL - ROtate Left
+        const static Byte INSTR_6502_ROL_ACCUMULATOR = 0x2A;     // 2
+        const static Byte INSTR_6502_ROL_ZEROPAGE    = 0x26;     // 5
+        const static Byte INSTR_6502_ROL_ZEROPAGE_X  = 0x36;     // 6
+        const static Byte INSTR_6502_ROL_ABSOLUTE    = 0x2E;     // 6
+        const static Byte INSTR_6502_ROL_ABSOLUTE_X  = 0x3E;     // 7
+
+        // ROR - ROtate Right
+        const static Byte INSTR_6502_ROR_ACCUMULATOR = 0x6A;     // 2
+        const static Byte INSTR_6502_ROR_ZEROPAGE    = 0x66;     // 5
+        const static Byte INSTR_6502_ROR_ZEROPAGE_X  = 0x76;     // 6
+        const static Byte INSTR_6502_ROR_ABSOLUTE    = 0x6E;     // 6
+        const static Byte INSTR_6502_ROR_ABSOLUTE_X  = 0x7E;     // 7
+
+        // BIT
+        const static Byte INSTR_6502_BIT_ZEROPAGE = 0x24;        // 3
+        const static Byte INSTR_6502_BIT_ABSOLUTE = 0x2C;        // 4
 
         // BRK - Break
         const static Byte INSTR_6502_BRK = 0x00;                 // 7, Halt the program.
+
+        // SEC - SEt Carry flag on
+        const static Byte INSTR_6502_SEC = 0x38;                 // 2
+
+        // SEI - SEt Interrupt disable
+        const static Byte INSTR_6502_SEI = 0x78;                 // 2
 
         // CLD - CLear Decimal flag
         const static Byte INSTR_6502_CLD = 0xD8;                 // 2, Sets D flag to off.
@@ -247,6 +298,10 @@ class CPU
         void TAX_set_CPU_flags();
         void TXA_set_CPU_flags();
         void ORA_set_CPU_flags();
+        void DEX_set_CPU_flags();
+        void INX_set_CPU_flags();
+        void DEY_set_CPU_flags();
+        void INY_set_CPU_flags();
         void DEC_set_CPU_flags(Byte data_from_memory);
         void INC_set_CPU_flags(Byte data_from_memory);
 
@@ -291,6 +346,8 @@ class CPU
         Word get_word(Memory& memory, const Byte address);
         Word get_word(Memory& memory, const Word address);
         Word get_word_zpg_wrap(Memory& memory, const Byte address);
+
+        Byte pop_from_stack(Memory& memory);
 
         Byte get_data_absolute(Memory& memory);
         Byte get_data_absolute(Memory& memory, const Byte index);
