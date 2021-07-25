@@ -41,3 +41,4 @@ emu.dir/Debug/emu.tlog/link.write.1.tlog
 test/6502_functional_test.bin
 latex/*
 html/*
+log.txt

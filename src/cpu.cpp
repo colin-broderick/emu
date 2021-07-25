@@ -52,7 +52,7 @@ void CPU::LDA_set_CPU_flags()
  */
 void CPU::CMP_set_CPU_flags(Byte data_from_memory)
 {
-    Word difference = static_cast<Word>(A - data_from_memory);
+    int difference = static_cast<int>(A - data_from_memory);
     C = (A >= data_from_memory);
     Z = (A == data_from_memory);
     N = (difference & BIT7);
@@ -140,7 +140,7 @@ int CPU::run(Memory& memory, const int cycles)
         // We increment the instruction pointer to point to the next byte in memory.
         IP++;
 
-        LOG("N" << N << " " << "V" << V << " " << "B" << B << " " << "D" << D << " " << "I" << I << " " << "Z" << Z << " " << "C" << C << "\t" << "A" << (int)A << "\t" << "X" << (int)X << "\t" << instruction_names[instruction] << " " << IP);
+        LOG("N" << N << " " << "V" << V << " " << "B" << B << " " << "D" << D << " " << "I" << I << " " << "Z" << Z << " " << "C" << C << "    " << std::hex << "IP:" << std::setw(4) << (int)IP << "   " << "SP:" << std::setw(4) << (int)SP << "   " << "A:" << std::setw(2) << (int)A << "   " << "X:" << std::setw(2) << (int)X << "   " << "Y:" << std::setw(2) << (int)Y << "   " << instruction_names[instruction]);
 
         switch (instruction)
         {
@@ -464,7 +464,7 @@ int CPU::run(Memory& memory, const int cycles)
                 break;
 
             case INSTR_6502_TXS:
-                SP = 0x01FF & X;
+                SP = static_cast<Word>(0x0100 | X);
                 use_cycles(2);
                 break;
 
@@ -613,20 +613,34 @@ int CPU::run(Memory& memory, const int cycles)
             case INSTR_6502_CPX_IMMEDIATE:
                 {
                     int result = X - get_data_immediate(memory);
-                    C = (result >= 0);
-                    Z = (result == 0);
-                    N = (result & BIT7);
-                    use_cycles(2);
                     IP++;
+                    CPX_set_CPU_flags(result);
+                    use_cycles(2);
+                }
+                break;
+                
+            case INSTR_6502_CPX_ZEROPAGE:
+                {
+                    int result = X - get_data_zeropage(memory);
+                    IP++;
+                    CPX_set_CPU_flags(result);
+                    use_cycles(3);
+                }
+                break;
+
+            case INSTR_6502_CPX_ABSOLUTE:
+                {
+                    int result = X - get_data_absolute(memory);
+                    IP++;
+                    CPX_set_CPU_flags(result);
+                    use_cycles(4);
                 }
                 break;
 
             case INSTR_6502_CPY_IMMEDIATE:
                 {
                     int result = Y - get_data_immediate(memory);
-                    C = (result >= 0);
-                    Z = (result == 0);
-                    N = (result & BIT7);
+                    CPY_set_CPU_flags(result);
                     use_cycles(2);
                     IP++;
                 }
@@ -635,9 +649,7 @@ int CPU::run(Memory& memory, const int cycles)
             case INSTR_6502_CPY_ZEROPAGE:
                 {
                     int result = Y - get_data_zeropage(memory);
-                    C = (result >= 0);
-                    Z = (result == 0);
-                    N = (result & BIT7);
+                    CPY_set_CPU_flags(result);
                     use_cycles(3);
                     IP++;
                 }
@@ -646,9 +658,7 @@ int CPU::run(Memory& memory, const int cycles)
             case INSTR_6502_CPY_ABSOLUTE:
                 {
                     int result = Y - get_data_absolute(memory);
-                    C = (result >= 0);
-                    Z = (result == 0);
-                    N = (result & BIT7);
+                    CPY_set_CPU_flags(result);
                     use_cycles(4);
                     IP++;
                 }
@@ -1300,6 +1310,93 @@ int CPU::run(Memory& memory, const int cycles)
                 }
                 break;
 
+            case INSTR_6502_SBC_IMMEDIATE:
+                {
+                    Byte data = get_data_immediate(memory);
+                    IP++;
+                    A = sub_with_carry(data);
+                    use_cycles(2);
+                }
+                break;
+
+            case INSTR_6502_SBC_ZEROPAGE:
+                {
+                    Byte data = get_data_zeropage(memory);
+                    IP++;
+                    A = sub_with_carry(data);
+                    use_cycles(3);
+                }
+                break;
+
+            case INSTR_6502_SBC_ZEROPAGE_X:
+                {
+                    Byte data = get_data_zeropage(memory, X);
+                    IP++;
+                    A = sub_with_carry(data);
+                    use_cycles(4);
+                }
+                break;
+
+            case INSTR_6502_SBC_ABSOLUTE:
+                {
+                    Byte data = get_data_absolute(memory);
+                    IP++;
+                    IP++;
+                    A = sub_with_carry(data);
+                    use_cycles(4);
+                }
+                break;
+
+            case INSTR_6502_SBC_ABSOLUTE_X:
+                {
+                    Byte data = get_data_absolute(memory, X);
+                    IP++;
+                    IP++;
+                    A = sub_with_carry(data);
+                    use_cycles(4);
+                    if (page_crossed)
+                    {
+                        use_cycles(1);
+                    }
+                }
+                break;
+
+            case INSTR_6502_SBC_ABSOLUTE_Y:
+                {
+                    Byte data = get_data_absolute(memory, Y);
+                    IP++;
+                    IP++;
+                    A = sub_with_carry(data);
+                    use_cycles(4);
+                    if (page_crossed)
+                    {
+                        use_cycles(1);
+                    }
+                }
+                break;
+
+            case INSTR_6502_SBC_INDIRECT_X:
+                {
+                    Byte data = get_data_indexed_indirect(memory, X);
+                    IP++;
+                    A = sub_with_carry(data);
+                    use_cycles(6);
+                }
+                break;
+
+            case INSTR_6502_SBC_INDIRECT_Y:
+                {
+                    Byte data = get_data_indirect_indexed(memory, Y);
+                    IP++;
+                    A = sub_with_carry(data);
+                    use_cycles(5);
+                    if (page_crossed)
+                    {
+                        use_cycles(1);
+                    }
+                }
+                break;
+
             case INSTR_6502_CLD:
                 D = false;
                 use_cycles(2);
@@ -1390,6 +1487,28 @@ int CPU::run(Memory& memory, const int cycles)
                 use_cycles(3);
                 break;
 
+            case INSTR_6502_INC_ZEROPAGE:
+                {
+                    Byte value = get_data_zeropage(memory);
+                    value++;
+                    set_data_zeropage(memory, value);
+                    IP++;
+                    INC_set_CPU_flags(value);
+                    use_cycles(5);
+                }
+                break;
+
+            case INSTR_6502_INC_ZEROPAGE_X:
+                {
+                    Byte value = get_data_zeropage(memory, X);
+                    value++;
+                    set_data_zeropage(memory, value, X);
+                    IP++;
+                    INC_set_CPU_flags(value);
+                    use_cycles(6);
+                }
+                break;
+
             case INSTR_6502_INC_ABSOLUTE:
                 {
                     Byte value = get_data_absolute(memory);
@@ -1411,6 +1530,28 @@ int CPU::run(Memory& memory, const int cycles)
                     IP++;
                     INC_set_CPU_flags(value);
                     use_cycles(7);
+                }
+                break;
+
+            case INSTR_6502_DEC_ZEROPAGE:
+                {
+                    Byte value = get_data_zeropage(memory);
+                    value--;
+                    set_data_zeropage(memory, value);
+                    IP++;
+                    DEC_set_CPU_flags(value);
+                    use_cycles(5);
+                }
+                break;
+
+            case INSTR_6502_DEC_ZEROPAGE_X:
+                {
+                    Byte value = get_data_zeropage(memory, X);
+                    value--;
+                    set_data_zeropage(memory, value, X);
+                    IP++;
+                    DEC_set_CPU_flags(value);
+                    use_cycles(6);
                 }
                 break;
 
@@ -1523,7 +1664,7 @@ int CPU::run(Memory& memory, const int cycles)
                 return BREAK;
         }
     }
-    return cycles_available;
+    return CONTINUE;
 }
 
 /** \brief Sets the value of a byte in memory, addressed by a full word.
@@ -1679,12 +1820,23 @@ Byte CPU::get_data_absolute(Memory& memory, const Byte index)
     return get_byte(memory, address);
 }
 
+/** \brief Performs subtracton of accumulator and data, setting the carry bit as required.
+ * \param data A byte of data to be subtracted from the accumulator.
+ * \return A byte to be stored in the accumulator.
+ */
+Byte CPU::sub_with_carry(const Byte data)
+{
+    return add_with_carry(~data);
+}
+
 /** \brief Performs addition of accumulator and data, setting the carry bit as required.
  * \param data A byte of data to be added to the accumulator.
  * \return A byte to be stored in the accumulator.
  */
-Byte CPU::add_with_carry(Byte data)
+Byte CPU::add_with_carry(const Byte data)
 {
+    // TODO Not at all confident in this implementation, esp. V = ...
+    // http://www.righto.com/2012/12/the-6502-overflow-flag-explained.html
     Word result = static_cast<Word>(data + A + C);
     Z = (result == 0);
     C = (result > 255);
@@ -1819,11 +1971,9 @@ void CPU::branch_relative(Byte distance)
 {
     if (distance & BIT7)
     {
-        LOG((int)distance);
         // If jump is negative get the two's complement and subtract the result.
         distance = ~distance;
         distance += 1;
-        LOG((int)distance);
         IP = IP - distance;
     }
     else
@@ -1918,4 +2068,16 @@ void CPU::DEY_set_CPU_flags()
 void CPU::INY_set_CPU_flags()
 {
     LDY_set_CPU_flags();
+}
+
+void CPU::CPX_set_CPU_flags(const int data)
+{
+    C = (data >= 0);
+    Z = (data == 0);
+    N = (data & BIT7);
+}
+
+void CPU::CPY_set_CPU_flags(const int data)
+{
+    CPX_set_CPU_flags(data);
 }

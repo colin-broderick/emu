@@ -101,7 +101,17 @@ class CPU
         const static Byte INSTR_6502_ADC_ABSOLUTE_X  = 0x7D;     // 4+, Add to A with carry and all sorts of flag nonsense.
         const static Byte INSTR_6502_ADC_ABSOLUTE_Y  = 0x79;     // 4+, Add to A with carry and all sorts of flag nonsense.
         const static Byte INSTR_6502_ADC_INDIRECT_X  = 0x61;     // 6, Add to A with carry and all sorts of flag nonsense.
-        const static Byte INSTR_6502_ADC_INDIRECT_Y  = 0x71;     // 5, Add to A with carry and all sorts of flag nonsense.
+        const static Byte INSTR_6502_ADC_INDIRECT_Y  = 0x71;     // 5+, Add to A with carry and all sorts of flag nonsense.
+
+        // SBC - SuBtract with Carry
+        const static Byte INSTR_6502_SBC_IMMEDIATE   = 0xE9;     // 2, Add to A with carry and all sorts of flag nonsense.
+        const static Byte INSTR_6502_SBC_ZEROPAGE    = 0xE5;     // 3, Add to A with carry and all sorts of flag nonsense.
+        const static Byte INSTR_6502_SBC_ZEROPAGE_X  = 0xF5;     // 4, Add to A with carry and all sorts of flag nonsense.
+        const static Byte INSTR_6502_SBC_ABSOLUTE    = 0xED;     // 4, Add to A with carry and all sorts of flag nonsense.
+        const static Byte INSTR_6502_SBC_ABSOLUTE_X  = 0xFD;     // 4+, Add to A with carry and all sorts of flag nonsense.
+        const static Byte INSTR_6502_SBC_ABSOLUTE_Y  = 0xF9;     // 4+, Add to A with carry and all sorts of flag nonsense.
+        const static Byte INSTR_6502_SBC_INDIRECT_X  = 0xE1;     // 6, Add to A with carry and all sorts of flag nonsense.
+        const static Byte INSTR_6502_SBC_INDIRECT_Y  = 0xF1;     // 5+, Add to A with carry and all sorts of flag nonsense.
 
         // PLP - PuLl Processor flags from stack
         const static Byte INSTR_6502_PLP = 0x28;                 // 4
@@ -120,6 +130,8 @@ class CPU
 
         // CPX - ComPare X register
         const static Byte INSTR_6502_CPX_IMMEDIATE = 0xE0;       // 2, Compare value in X with value in next memory location.
+        const static Byte INSTR_6502_CPX_ZEROPAGE  = 0xE4;       // 3, Compare value in X with value in next memory location.
+        const static Byte INSTR_6502_CPX_ABSOLUTE  = 0xEC;       // 4, Compare value in X with value in next memory location.
 
         // CPY - ComPare Y register
         const static Byte INSTR_6502_CPY_IMMEDIATE = 0xC0;       // 2, As CPX, but for Y register.
@@ -201,7 +213,7 @@ class CPU
         // SEC - SEt Carry flag on
         const static Byte INSTR_6502_SEC = 0x38;                 // 2
 
-        // SEI - SEt Interrupt disable
+        // SEI - SEt Interrupt
         const static Byte INSTR_6502_SEI = 0x78;                 // 2
 
         // CLD - CLear Decimal flag
@@ -239,10 +251,14 @@ class CPU
         const static Byte INSTR_6502_JMP_INDIRECT = 0x6c;        // 5, Sets IP equal to word stored at address & address + 1
 
         // DEC - DECrement memory
+        const static Byte INSTR_6502_DEC_ZEROPAGE   = 0xC6;      // 5, Subtracts one from memory location.
+        const static Byte INSTR_6502_DEC_ZEROPAGE_X = 0xD6;      // 6, Subtracts one from memory location.
         const static Byte INSTR_6502_DEC_ABSOLUTE   = 0xCE;      // 6, Subtracts one from memory location.
         const static Byte INSTR_6502_DEC_ABSOLUTE_X = 0xDE;      // 7, Subtracts one from memory location.
 
         // INC - INCrement memory
+        const static Byte INSTR_6502_INC_ZEROPAGE   = 0xE6;      // 5, Subtracts one from memory location.
+        const static Byte INSTR_6502_INC_ZEROPAGE_X = 0xF6;      // 6, Subtracts one from memory location.
         const static Byte INSTR_6502_INC_ABSOLUTE =   0xEE;      // 6, Adds one to the value in memory, setting Z and N if required
         const static Byte INSTR_6502_INC_ABSOLUTE_X = 0xFE;      // 7, Adds one to the value in memory, setting Z and N if required
 
@@ -259,11 +275,11 @@ class CPU
         /***************************************************************************************************************************/
 
     public:
-        const static int CPU_frequency = 1790000;
+        const static int CPU_frequency = 1790000; // Hz
         const static int cycles_per_frame = 29833;
         const static int microseconds_per_frame = 16667;
 
-        enum RETURN_CODES
+        enum RETURN_CODE
         {
             BREAK,
             CONTINUE
@@ -304,9 +320,12 @@ class CPU
         void INY_set_CPU_flags();
         void DEC_set_CPU_flags(Byte data_from_memory);
         void INC_set_CPU_flags(Byte data_from_memory);
+        void CPX_set_CPU_flags(const int data_from_memory);
+        void CPY_set_CPU_flags(const int data_from_memory);
 
         void branch_relative(Byte distance);
-        Byte add_with_carry(Byte data);
+        Byte add_with_carry(const Byte data);
+        Byte sub_with_carry(const Byte data);
 
         void use_cycles(const int cycles_to_use);
         void add_cycles(const int cycles_to_add);
