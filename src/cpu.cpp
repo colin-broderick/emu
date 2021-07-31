@@ -2080,8 +2080,12 @@ void CPU::INY_set_CPU_flags()
     LDY_set_CPU_flags();
 }
 
-/** \brief Set CPU flags following CPX operation.
+/** \brief Set CPU flags following CPX operation. 
  * \param data The setting of the flags depends upon some non-stored calculation result.
+ * 
+ * The non-stored result of the calculation is passed to this function. The carry (C) flag is set if the value
+ * is greater than or equal to zero. The zero (Z) flag is set if the value is equal to zero. The negative (N)
+ * flag is set if bit 7 of the value is equal to one; this is the sign bit if the value is interpreted as a signed.
  */
 void CPU::CPX_set_CPU_flags(const int data)
 {
