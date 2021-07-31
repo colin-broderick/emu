@@ -14,8 +14,8 @@ int main(int argc, char* argv[])
         // TODO Add proper help text, then quit.
         std::cout << "Usage:" << std::endl;
         std::cout << "  -r    Path to ROM file" << std::endl;
-        std::cout << "  -ip   Specify the starting instruction pointer" << std::endl;
-        std::cout << "  -sp   Specify the starting stack pointer" << std::endl;
+        std::cout << "  -ip   Specify the starting instruction pointer (in hex)" << std::endl;
+        std::cout << "  -sp   Specify the starting stack pointer (in hex)" << std::endl;
         return 0;
     }
 
