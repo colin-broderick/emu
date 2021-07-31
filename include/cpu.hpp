@@ -313,7 +313,7 @@ class CPU
         // Internal flag setters ------------------------------------------------------------------------------------------------
         void LDA_set_CPU_flags();
         void AND_set_CPU_flags();
-        void CMP_set_CPU_flags(Byte data_from_memory);
+        void CMP_set_CPU_flags(const Byte data_from_memory);
         void EOR_set_CPU_flags();
         void LDX_set_CPU_flags();
         void LDY_set_CPU_flags();
@@ -324,8 +324,8 @@ class CPU
         void INX_set_CPU_flags();
         void DEY_set_CPU_flags();
         void INY_set_CPU_flags();
-        void DEC_set_CPU_flags(Byte data_from_memory);
-        void INC_set_CPU_flags(Byte data_from_memory);
+        void DEC_set_CPU_flags(const Byte data_from_memory);
+        void INC_set_CPU_flags(const Byte data_from_memory);
         void CPX_set_CPU_flags(const int data_from_memory);
         void CPY_set_CPU_flags(const int data_from_memory);
 
@@ -347,32 +347,32 @@ class CPU
         bool C, Z, I, D, B, V, N;      // CPU flags.     
 
         // Internal setters -----------------------------------------------------------------------------------------------------
-        void set_byte(Memory& memory, Word address, Byte value);
-        void set_data_absolute(Memory& memory, Byte data);
-        void set_data_absolute(Memory& memory, Byte data, Byte index);
-        void set_data_zeropage(Memory& memory, Byte data);
-        void set_data_zeropage(Memory& memory, Byte data, Byte index);
-        void set_data_indexed_indirect(Memory& memory, Byte data, Byte index);
+        void set_byte(Memory& memory, const Word address, const Byte value);
+        void set_data_absolute(Memory& memory, const Byte data);
+        void set_data_absolute(Memory& memory, const Byte data, Byte index);
+        void set_data_zeropage(Memory& memory, const Byte data);
+        void set_data_zeropage(Memory& memory, const Byte data, const Byte index);
+        void set_data_indexed_indirect(Memory& memory, const Byte data, const Byte index);
         void set_data_indirect_indexed(Memory& memory, const Byte data, const Byte index);
 
         // Internal getters -----------------------------------------------------------------------------------------------------
-        Byte flags_as_byte();
+        Byte flags_as_byte() const;
         Byte pop_from_stack(Memory& memory);
-        Byte get_byte(Memory& memory);
-        Byte get_byte(Memory& memory, const Byte address);
-        Byte get_byte(Memory& memory, const Word address);
-        Word get_word(Memory& memory);
-        Word get_word(Memory& memory, const Byte address);
-        Word get_word(Memory& memory, const Word address);
-        Word get_word_zpg_wrap(Memory& memory, const Byte address);
-        Byte get_data_absolute(Memory& memory);
+        Byte get_byte(Memory& memory) const;
+        Byte get_byte(Memory& memory, const Byte address) const;
+        Byte get_byte(Memory& memory, const Word address) const;
+        Word get_word(Memory& memory) const;
+        Word get_word(Memory& memory, const Byte address) const;
+        Word get_word(Memory& memory, const Word address) const;
+        Word get_word_zpg_wrap(Memory& memory, const Byte address) const;
+        Byte get_data_absolute(Memory& memory) const;
         Byte get_data_absolute(Memory& memory, const Byte index);
-        Byte get_data_relative(Memory& memory);
-        Byte get_data_immediate(Memory& memory);
-        Byte get_data_zeropage(Memory& memory);
-        Byte get_data_zeropage(Memory& memory, const Byte index);
-        Byte get_data_indexed_indirect(Memory& memory, const Byte index);   //(Indirect,X) uses IP as indirect address
-        Byte get_data_indirect_indexed(Memory& memory, const Byte index);   //(Indirect),Y uses IP as indirect address
+        Byte get_data_relative(Memory& memory) const;
+        Byte get_data_immediate(Memory& memory) const;
+        Byte get_data_zeropage(Memory& memory) const;
+        Byte get_data_zeropage(Memory& memory, const Byte index) const;
+        Byte get_data_indexed_indirect(Memory& memory, const Byte index) const;   // (Indirect,X) uses IP as indirect address
+        Byte get_data_indirect_indexed(Memory& memory, const Byte index);   // (Indirect),Y uses IP as indirect address
     
     public:
         // Constructors ---------------------------------------------------------------------------------------------------------
@@ -384,8 +384,8 @@ class CPU
         void setSP(const Word newSP);
 
         // Getters --------------------------------------------------------------------------------------------------------------
-        Word getIP();
-        Word getSP();
+        Word getIP() const;
+        Word getSP() const;
 
         // Operators ------------------------------------------------------------------------------------------------------------
         friend std::ostream& operator<<(std::ostream& stream, const CPU& cpu);

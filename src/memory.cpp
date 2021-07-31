@@ -38,7 +38,6 @@ std::ostream& operator<<(std::ostream& stream, Memory& memory)
  */
 Byte& Memory::operator[](int index)
 {
-    std::lock_guard<std::mutex> lock{mem_lock};
     if (index >= 0)
     {
         return data[index];
