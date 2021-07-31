@@ -305,6 +305,7 @@ class CPU
         };
 
     private:
+        // Internal flag setters ------------------------------------------------------------------------------------------------
         void LDA_set_CPU_flags();
         void AND_set_CPU_flags();
         void CMP_set_CPU_flags(Byte data_from_memory);
@@ -323,31 +324,25 @@ class CPU
         void CPX_set_CPU_flags(const int data_from_memory);
         void CPY_set_CPU_flags(const int data_from_memory);
 
+        // Miscellaneous --------------------------------------------------------------------------------------------------------
         void branch_relative(Byte distance);
         Byte add_with_carry(const Byte data);
         Byte sub_with_carry(const Byte data);
+        bool page_crossed = false;
 
+        // Internal cycle storage -----------------------------------------------------------------------------------------------
+        int cycles_available = 0;
         void use_cycles(const int cycles_to_use);
         void add_cycles(const int cycles_to_add);
 
-        bool page_crossed = false;
+        // Flags and registers --------------------------------------------------------------------------------------------------
+        Word SP;                       // Stack pointer.
+        Word IP;                       // Instruction pointer.
+        Byte A, X, Y;                  // Accumulator and registers.
+        bool C, Z, I, D, B, V, N;      // CPU flags.     
 
-        int cycles_available = 0;
-
-    public:
-        // Attributes -----------------------------------------------------------------------------------------------------------
-        Word SP;           // Stack pointer.
-        Word IP;           // Instruction pointer.
-        Byte A, X, Y;      // Accumulator and registers.
-        bool C, Z, I, D, B, V, N;   // CPU flags.     
-
-        // Constructors ---------------------------------------------------------------------------------------------------------
-        CPU();
-        CPU(const unsigned int ip, const unsigned int sp);
-
-        // Setters --------------------------------------------------------------------------------------------------------------
+        // Internal setters -----------------------------------------------------------------------------------------------------
         void set_byte(Memory& memory, Word address, Byte value);
-        
         void set_data_absolute(Memory& memory, Byte data);
         void set_data_absolute(Memory& memory, Byte data, Byte index);
         void set_data_zeropage(Memory& memory, Byte data);
@@ -355,9 +350,9 @@ class CPU
         void set_data_indexed_indirect(Memory& memory, Byte data, Byte index);
         void set_data_indirect_indexed(Memory& memory, const Byte data, const Byte index);
 
-        // Getters --------------------------------------------------------------------------------------------------------------
+        // Internal getters -----------------------------------------------------------------------------------------------------
         Byte flags_as_byte();
-        
+        Byte pop_from_stack(Memory& memory);
         Byte get_byte(Memory& memory);
         Byte get_byte(Memory& memory, const Byte address);
         Byte get_byte(Memory& memory, const Word address);
@@ -365,9 +360,6 @@ class CPU
         Word get_word(Memory& memory, const Byte address);
         Word get_word(Memory& memory, const Word address);
         Word get_word_zpg_wrap(Memory& memory, const Byte address);
-
-        Byte pop_from_stack(Memory& memory);
-
         Byte get_data_absolute(Memory& memory);
         Byte get_data_absolute(Memory& memory, const Byte index);
         Byte get_data_relative(Memory& memory);
@@ -376,10 +368,25 @@ class CPU
         Byte get_data_zeropage(Memory& memory, const Byte index);
         Byte get_data_indexed_indirect(Memory& memory, const Byte index);   //(Indirect,X) uses IP as indirect address
         Byte get_data_indirect_indexed(Memory& memory, const Byte index);   //(Indirect),Y uses IP as indirect address
+    
+    public:
+        // Constructors ---------------------------------------------------------------------------------------------------------
+        CPU();
+        CPU(const unsigned int ip, const unsigned int sp);
+
+        // Setters --------------------------------------------------------------------------------------------------------------
+        void setIP(const Word newIP);
+        void setSP(const Word newSP);
+
+        // Getters --------------------------------------------------------------------------------------------------------------
+        Word getIP();
+        Word getSP();
+
+        // Operators ------------------------------------------------------------------------------------------------------------
+        friend std::ostream& operator<<(std::ostream& stream, const CPU& cpu);
 
         // General --------------------------------------------------------------------------------------------------------------
         int run(Memory& memory, const int cycles);
-        friend std::ostream& operator<<(std::ostream& stream, const CPU& cpu);
 };
 
 std::ostream& operator<<(std::ostream& stream, const CPU& cpu);

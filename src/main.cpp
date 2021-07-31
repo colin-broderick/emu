@@ -14,7 +14,7 @@ int main(int argc, char* argv[])
     
     System NES;
     NES.load_rom(rom_file_name);
-    NES.cpu.IP = 0x00;
+    NES.cpu.setIP(0x400);
     NES.run();
 
     return 0;

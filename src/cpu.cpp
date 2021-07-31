@@ -2040,36 +2040,49 @@ void CPU::AND_set_CPU_flags()
     LDA_set_CPU_flags();
 }
 
+/** \brief Increases the number of available CPU cycles.
+ * \param cycles_to_add How much to increase the count of available cycles.
+ */
 void CPU::add_cycles(int cycles_to_add)
 {
     cycles_available += cycles_to_add;
 }
 
+/** \brief Reduce the number of available CPU cycles.
+ * \param cycles_to_use How much to reduce the count of available cycles.
+ */
 void CPU::use_cycles(int cycles_to_use)
 {
     cycles_available -= cycles_to_use;
 }
 
+/** \brief Set CPU flags following DEX operation. */
 void CPU::DEX_set_CPU_flags()
 {
     LDX_set_CPU_flags();
 }
 
+/** \brief Set CPU flags following INX operaiton. */
 void CPU::INX_set_CPU_flags()
 {
     LDX_set_CPU_flags();
 }
 
+/** Set CPU flagas following DEY operation. */
 void CPU::DEY_set_CPU_flags()
 {
     LDY_set_CPU_flags();
 }
 
+/** \brief Set CPU flags following INY operation. */
 void CPU::INY_set_CPU_flags()
 {
     LDY_set_CPU_flags();
 }
 
+/** \brief Set CPU flags following CPX operation.
+ * \param data The setting of the flags depends upon some non-stored calculation result.
+ */
 void CPU::CPX_set_CPU_flags(const int data)
 {
     C = (data >= 0);
@@ -2077,7 +2090,44 @@ void CPU::CPX_set_CPU_flags(const int data)
     N = (data & BIT7);
 }
 
+/** \brief Set CPU flags following CPY operation.
+ * \param data The setting of the flags depends upon some non-stored calculation result.
+ */
 void CPU::CPY_set_CPU_flags(const int data)
 {
     CPX_set_CPU_flags(data);
+}
+
+/** \brief Set the instruction pointer of the CPU.
+ * \param newIP The new value of the instruction pointer.
+ */
+void CPU::setIP(const Word newIP)
+{
+    // Bounds checking on IP value.
+    this->IP = newIP;
+}
+
+/** \brief Set the stack pointer of the CPU.
+ * \param newSP The new value for the stack pointer.
+ */
+void CPU::setSP(const Word newSP)
+{
+    // Bounds checking on SP value.
+    this->SP = newSP;
+}
+
+/** \brief Get the current value of the CPU instruction pointer.
+ * \return Current IP value.
+ */
+Word CPU::getIP()
+{
+    return this->IP;
+}
+
+/** \brief Get the current value of the CPU stack pointer.
+ * \return Current SP value.
+ */
+Word CPU::getSP()
+{
+    return this->SP;
 }
