@@ -29,6 +29,16 @@ CPU::CPU(const Word ip, const Word sp)
 
 /** \brief Runs the loaded program while CPU cycles are available to spend.
  * \param memory A reference to the main memory of the system. The CPU reads and writes this memory.
+ * \param cycles The new supply of cycles.
+ * \return Code indicating whether to continue or stop running the CPU.
+ * 
+ * The CPU stores a count of available cycles. When the run function is called, the
+ * supplied cycles will be added to this internal count, and the CPU will then execute
+ * instructions until the internal supply is exhausted.
+ * 
+ * The internal supply can become slightly negative, since instructions take different
+ * numbers of cycles to execute, and this cannot be predicted ahead of time. This
+ * will be reflected in the next call to run(), since the negative supply is remembered.
  */
 int CPU::run(Memory& memory, const int cycles)
 {
@@ -36,22 +46,23 @@ int CPU::run(Memory& memory, const int cycles)
     
     while (cycles_available > 0)
     {
-        // #if DEBUG
-        // std::cout << memory << "\n";
-        // #endif
-
         // Reset the page crossing flag in case it was left on from the last iteration.
         page_crossed = false;
 
         // TODO Interrupt handler should go here.
 
         // Grab an instruction from RAM.
-        Byte instruction = get_byte(memory);
+        Byte instruction = get_data_immediate(memory);
 
         // We increment the instruction pointer to point to the next byte in memory.
         IP++;
 
-        LOG("N" << N << " " << "V" << V << " " << "B" << B << " " << "D" << D << " " << "I" << I << " " << "Z" << Z << " " << "C" << C << "    " << std::hex << "IP:" << std::setw(4) << (int)IP << "   " << "SP:" << std::setw(4) << (int)SP << "   " << "A:" << std::setw(2) << (int)A << "   " << "X:" << std::setw(2) << (int)X << "   " << "Y:" << std::setw(2) << (int)Y << "   " << instruction_names[instruction]);
+        LOG(
+            "N" << N << " " << "V" << V << " " << "B" << B << " " << "D" << D << " " << "I" << I << " " << "Z" << Z 
+            << " " << "C" << C << "    " << std::hex << "IP:" << std::setw(4) << (int)IP << "   " << "SP:" 
+            << std::setw(4) << (int)SP << "   " << "A:" << std::setw(2) << (int)A << "   " << "X:" << std::setw(2) 
+            << (int)X << "   " << "Y:" << std::setw(2) << (int)Y << "   " << instruction_names[instruction]
+        );
 
         switch (instruction)
         {
@@ -432,7 +443,6 @@ int CPU::run(Memory& memory, const int cycles)
                 break;
 
             case INSTR_6502_TAX:
-                // Copy A into X.
                 X = A;
                 TAX_set_CPU_flags();
                 use_cycles(2);
@@ -451,7 +461,6 @@ int CPU::run(Memory& memory, const int cycles)
                 break;
 
             case INSTR_6502_INX:
-                // Increment X.
                 X++;
                 INX_set_CPU_flags();
                 use_cycles(2);
@@ -464,7 +473,6 @@ int CPU::run(Memory& memory, const int cycles)
                 break;
 
             case INSTR_6502_LDX_IMMEDIATE:
-                // Load data into X.
                 X = get_data_immediate(memory);
                 IP++;
                 LDX_set_CPU_flags();
@@ -472,7 +480,6 @@ int CPU::run(Memory& memory, const int cycles)
                 break;
 
             case INSTR_6502_LDX_ZEROPAGE:
-                // Load data into X.
                 X = get_data_zeropage(memory);
                 IP++;
                 LDX_set_CPU_flags();
@@ -480,7 +487,6 @@ int CPU::run(Memory& memory, const int cycles)
                 break;
 
             case INSTR_6502_LDX_ZEROPAGE_Y:
-                // Load data into X.
                 X = get_data_zeropage(memory, Y);
                 IP++;
                 LDX_set_CPU_flags();
@@ -488,7 +494,6 @@ int CPU::run(Memory& memory, const int cycles)
                 break;
 
             case INSTR_6502_LDX_ABSOLUTE:
-                // Load data into X.
                 X = get_data_absolute(memory);
                 IP++;
                 IP++;
@@ -497,7 +502,6 @@ int CPU::run(Memory& memory, const int cycles)
                 break;
 
             case INSTR_6502_LDX_ABSOLUTE_Y:
-                // Load data into X.
                 X = get_data_absolute(memory, Y);
                 IP++;
                 IP++;
@@ -1367,7 +1371,6 @@ int CPU::run(Memory& memory, const int cycles)
 
             case INSTR_6502_JSR_ABSOLUTE:
                 {
-                    // Pushes (address minus one) of the return point onto the stack then sets program counter to target address
                     Word target_address = get_word(memory);
                     IP++;
                     memory[SP] = static_cast<Byte>(IP >> 8);
@@ -1571,7 +1574,8 @@ int CPU::run(Memory& memory, const int cycles)
                 break;
 
             default:
-                std::cout << "Unknown instruction: 0x" << std::hex << std::setw(2) << std::setfill('0') << (int)instruction << "\n";
+                std::cout << "Unknown instruction: 0x" << std::hex << std::setw(2) << std::setfill('0');
+                std::cout << (int)instruction << "\n";
                 return BREAK;
         }
     }
@@ -1652,8 +1656,7 @@ Word CPU::get_word(Memory& memory, const Word address) const
     return static_cast<Word>(val2 << 8) | val1;
 }
 
-/** \brief Get data byte from memory using absolute addressing, with data addressed by 
- * current instruction pointer.
+/** \brief Get data byte from memory using absolute addressing, with data addressed by current instruction pointer.
  * \param memory Reference to system memory.
  * \return 8-bit value from memory.
  */
@@ -1707,8 +1710,8 @@ void CPU::set_data_zeropage(Memory& memory, Byte data, Byte index)
     memory[data_address] = data;
 }
 
-/** \brief Get data byte from memory using absolute addressing, with data addressed by 
- * current instruction pointer and an index.
+/** \brief Get data byte from memory using absolute addressing, with data addressed by current instruction pointer and
+ * an index.
  * \param memory Reference to system memory.
  * \param index A byte to add to the address to be read from.
  * \return 8-bit value from memory.
@@ -1799,11 +1802,14 @@ Byte CPU::get_data_zeropage(Memory& memory, const Byte index) const
  * \param memory Reference to system memory.
  * \param address The zero page address of the first byte to be read.
  * \return 16-bit value from the zero page.
+ * 
+ * This function gets a word from the zero page in memory. Importantly, the FULL word is guaranteed to come from the
+ * zero page. If the low byte is at the end of the zero page, the high byte will come from the start of the zero page.
  */
 Word CPU::get_word_zpg_wrap(Memory& memory, const Byte address) const
 {
     Word val1 = static_cast<Word>(memory[address % 256]);
-    Word val2 = static_cast<Word>(memory[(address+1) % 256]);   // This wraps automatically since address is a Byte
+    Word val2 = static_cast<Word>(memory[(address+1) % 256]);
     return static_cast<Word>(val2 << 8) | val1;
 }
 
@@ -1836,8 +1842,8 @@ void CPU::set_data_indexed_indirect(Memory& memory, Byte data, Byte index)
     memory[target_address] = data;
 }
 
-/** \brief Get data from memory using the (indirect),y addressing mode.
- * Will set the page_crossed flag if a page is crossed.
+/** \brief Get data from memory using the (indirect),y addressing mode. Will set the page_crossed flag if a page is
+ * crossed.
  * \param memory Reference to system memory.
  * \param index Index to add to address.
  * \return 8-bit value from memory.
@@ -1942,7 +1948,7 @@ void CPU::use_cycles(int cycles_to_use)
  */
 void CPU::setIP(const Word newIP)
 {
-    // Bounds checking on IP value.
+    // TODO Bounds checking on IP value.
     this->IP = newIP;
 }
 
@@ -1951,7 +1957,7 @@ void CPU::setIP(const Word newIP)
  */
 void CPU::setSP(const Word newSP)
 {
-    // Bounds checking on SP value.
+    // TODO Bounds checking on SP value.
     this->SP = newSP;
 }
 
