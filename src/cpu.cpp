@@ -50,7 +50,7 @@ void CPU::LDA_set_CPU_flags()
 /** \brief Sets appropriate flags after performing a CMP operation.
  * \param data_from_memory The flags to set depend on the data read from memory to do the comparison.
  */
-void CPU::CMP_set_CPU_flags(Byte data_from_memory)
+void CPU::CMP_set_CPU_flags(const Byte data_from_memory)
 {
     int difference = static_cast<int>(A - data_from_memory);
     C = (A >= data_from_memory);
@@ -68,7 +68,7 @@ void CPU::EOR_set_CPU_flags()
  * in memory, and the N and Z flags are set against the new value.
  * \param data_from_memory The new value of the byte in memory.
  */
-void CPU::DEC_set_CPU_flags(Byte data_from_memory)
+void CPU::DEC_set_CPU_flags(const Byte data_from_memory)
 {
     N = (data_from_memory & BIT7);  // Set N on if sign bit of result is set.
     Z = (data_from_memory == 0);    // Set Z on if result is zero.
@@ -78,7 +78,7 @@ void CPU::DEC_set_CPU_flags(Byte data_from_memory)
  * in memory, and the N and Z flags are set against the new value.
  * \param data_from_memory The new value of the byte in memory.
  */
-void CPU::INC_set_CPU_flags(Byte data_from_memory)
+void CPU::INC_set_CPU_flags(const Byte data_from_memory)
 {
     DEC_set_CPU_flags(data_from_memory);
 }
@@ -1672,7 +1672,7 @@ int CPU::run(Memory& memory, const int cycles)
  * \param address The 16-bit address of the memory location to write to.
  * \param value The 8-bit value to write into memory.
  */
-void CPU::set_byte(Memory& memory, Word address, Byte value)
+void CPU::set_byte(Memory& memory, const Word address, Byte const value)
 {
     memory[address] = value;
 }
@@ -1681,7 +1681,7 @@ void CPU::set_byte(Memory& memory, Word address, Byte value)
  * \param memory Reference to system memory.
  * \return A byte from memory.
  */
-Byte CPU::get_byte(Memory& memory)
+Byte CPU::get_byte(Memory& memory) const
 {
     return memory[IP];
 }
@@ -1691,7 +1691,7 @@ Byte CPU::get_byte(Memory& memory)
  * \param address The address in the zero page from which to fetch data.
  * \return 8-bit value from specified memory location.
  */
-Byte CPU::get_byte(Memory& memory, const Byte address)
+Byte CPU::get_byte(Memory& memory, const Byte address) const
 {
     return memory[address];
 }
@@ -1701,7 +1701,7 @@ Byte CPU::get_byte(Memory& memory, const Byte address)
  * \param address A full 16-bit address from which to getch data.
  * \return 8-bit value from memory.
  */
-Byte CPU::get_byte(Memory& memory, const Word address)
+Byte CPU::get_byte(Memory& memory, const Word address) const
 {
     return memory[address];
 }
@@ -1710,7 +1710,7 @@ Byte CPU::get_byte(Memory& memory, const Word address)
  * \param memory Reference to system memory.
  * \return 16-bit value from memory.
  */
-Word CPU::get_word(Memory& memory)
+Word CPU::get_word(Memory& memory) const
 {
     Word val1 = static_cast<Word>(memory[IP]);
     Word val2 = static_cast<Word>(memory[IP+1]);
@@ -1722,7 +1722,7 @@ Word CPU::get_word(Memory& memory)
  * \param address 8-bit address in memory, from which to fetch data.
  * \return 16-bit value from specified memory location.
  */
-Word CPU::get_word(Memory& memory, const Byte address)
+Word CPU::get_word(Memory& memory, const Byte address) const
 {
     Word val1 = static_cast<Word>(memory[address]);
     Word val2 = static_cast<Word>(memory[address+1]);
@@ -1734,7 +1734,7 @@ Word CPU::get_word(Memory& memory, const Byte address)
  * \param address 16-bit address from which to fetch data.
  * \return 16-bit value from memory.
  */
-Word CPU::get_word(Memory& memory, const Word address)
+Word CPU::get_word(Memory& memory, const Word address) const
 {
     Word val1 = static_cast<Word>(memory[address]);
     Word val2 = static_cast<Word>(memory[address+1]);
@@ -1746,7 +1746,7 @@ Word CPU::get_word(Memory& memory, const Word address)
  * \param memory Reference to system memory.
  * \return 8-bit value from memory.
  */
-Byte CPU::get_data_absolute(Memory& memory)
+Byte CPU::get_data_absolute(Memory& memory) const
 {
     //get address from next two bytes and add index
     Word address = get_word(memory);
@@ -1758,7 +1758,7 @@ Byte CPU::get_data_absolute(Memory& memory)
  * \param memory Reference to system memory.
  * \param data A byte of data to store in the 16-bit address at the current instruction pointer.
  */
-void CPU::set_data_absolute(Memory& memory, Byte data)
+void CPU::set_data_absolute(Memory& memory, const Byte data)
 {
     Word address = get_word(memory);
     memory[address] = data;
@@ -1849,7 +1849,7 @@ Byte CPU::add_with_carry(const Byte data)
  * \param memory A reference to a memory array object.
  * \return A Byte from memory.
  */
-Byte CPU::get_data_relative(Memory& memory)
+Byte CPU::get_data_relative(Memory& memory) const
 {
     return get_data_immediate(memory);
 }
@@ -1858,7 +1858,7 @@ Byte CPU::get_data_relative(Memory& memory)
  * \param memory A reference to a memory array object.
  * \return A Byte from memory.
  */
-Byte CPU::get_data_immediate(Memory& memory)
+Byte CPU::get_data_immediate(Memory& memory) const
 {
     return get_byte(memory);
 }
@@ -1867,7 +1867,7 @@ Byte CPU::get_data_immediate(Memory& memory)
  * \param memory A reference to a memory array object.
  * \return A Byte from memory.
  */
-Byte CPU::get_data_zeropage(Memory& memory)
+Byte CPU::get_data_zeropage(Memory& memory) const
 {
     Byte data_address = get_byte(memory);
     return get_byte(memory, data_address);
@@ -1878,7 +1878,7 @@ Byte CPU::get_data_zeropage(Memory& memory)
  * \param index An index into a memory region.
  * \return A Byte from memory.
  */
-Byte CPU::get_data_zeropage(Memory& memory, const Byte index)
+Byte CPU::get_data_zeropage(Memory& memory, const Byte index) const
 {
     Byte data_address = get_byte(memory) + index;
     return get_byte(memory, data_address);
@@ -1889,7 +1889,7 @@ Byte CPU::get_data_zeropage(Memory& memory, const Byte index)
  * \param address The zero page address of the first byte to be read.
  * \return 16-bit value from the zero page.
  */
-Word CPU::get_word_zpg_wrap(Memory& memory, const Byte address)
+Word CPU::get_word_zpg_wrap(Memory& memory, const Byte address) const
 {
     Word val1 = static_cast<Word>(memory[address % 256]);
     Word val2 = static_cast<Word>(memory[(address+1) % 256]);   // This wraps automatically since address is a Byte
@@ -1901,7 +1901,7 @@ Word CPU::get_word_zpg_wrap(Memory& memory, const Byte address)
  * \param index Index added to address.
  * \return 8-bit value from memory.
  */
-Byte CPU::get_data_indexed_indirect(Memory& memory, const Byte index)
+Byte CPU::get_data_indexed_indirect(Memory& memory, const Byte index) const
 {
     // read next byte and add index without carry
     Byte indirect_address = get_byte(memory) + index;
@@ -1996,7 +1996,7 @@ Byte CPU::pop_from_stack(Memory& memory)
 /** \brief Encode all CPU flags into a single byte.
  * \return 8-bit value containing all CPU flags.
  */
-Byte CPU::flags_as_byte()
+Byte CPU::flags_as_byte() const
 {
     return static_cast<Byte>(
           (N << 7) 
@@ -2040,36 +2040,53 @@ void CPU::AND_set_CPU_flags()
     LDA_set_CPU_flags();
 }
 
+/** \brief Increases the number of available CPU cycles.
+ * \param cycles_to_add How much to increase the count of available cycles.
+ */
 void CPU::add_cycles(int cycles_to_add)
 {
     cycles_available += cycles_to_add;
 }
 
+/** \brief Reduce the number of available CPU cycles.
+ * \param cycles_to_use How much to reduce the count of available cycles.
+ */
 void CPU::use_cycles(int cycles_to_use)
 {
     cycles_available -= cycles_to_use;
 }
 
+/** \brief Set CPU flags following DEX operation. */
 void CPU::DEX_set_CPU_flags()
 {
     LDX_set_CPU_flags();
 }
 
+/** \brief Set CPU flags following INX operaiton. */
 void CPU::INX_set_CPU_flags()
 {
     LDX_set_CPU_flags();
 }
 
+/** Set CPU flagas following DEY operation. */
 void CPU::DEY_set_CPU_flags()
 {
     LDY_set_CPU_flags();
 }
 
+/** \brief Set CPU flags following INY operation. */
 void CPU::INY_set_CPU_flags()
 {
     LDY_set_CPU_flags();
 }
 
+/** \brief Set CPU flags following CPX operation. 
+ * \param data The setting of the flags depends upon some non-stored calculation result.
+ * 
+ * The non-stored result of the calculation is passed to this function. The carry (C) flag is set if the value
+ * is greater than or equal to zero. The zero (Z) flag is set if the value is equal to zero. The negative (N)
+ * flag is set if bit 7 of the value is equal to one; this is the sign bit if the value is interpreted as a signed.
+ */
 void CPU::CPX_set_CPU_flags(const int data)
 {
     C = (data >= 0);
@@ -2077,7 +2094,44 @@ void CPU::CPX_set_CPU_flags(const int data)
     N = (data & BIT7);
 }
 
+/** \brief Set CPU flags following CPY operation.
+ * \param data The setting of the flags depends upon some non-stored calculation result.
+ */
 void CPU::CPY_set_CPU_flags(const int data)
 {
     CPX_set_CPU_flags(data);
+}
+
+/** \brief Set the instruction pointer of the CPU.
+ * \param newIP The new value of the instruction pointer.
+ */
+void CPU::setIP(const Word newIP)
+{
+    // Bounds checking on IP value.
+    this->IP = newIP;
+}
+
+/** \brief Set the stack pointer of the CPU.
+ * \param newSP The new value for the stack pointer.
+ */
+void CPU::setSP(const Word newSP)
+{
+    // Bounds checking on SP value.
+    this->SP = newSP;
+}
+
+/** \brief Get the current value of the CPU instruction pointer.
+ * \return Current IP value.
+ */
+Word CPU::getIP() const
+{
+    return this->IP;
+}
+
+/** \brief Get the current value of the CPU stack pointer.
+ * \return Current SP value.
+ */
+Word CPU::getSP() const
+{
+    return this->SP;
 }
