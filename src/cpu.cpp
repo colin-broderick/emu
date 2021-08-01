@@ -4,24 +4,9 @@
 #include "cpu.hpp"
 #include "memory.hpp"
 
-#define DEBUG 1
-
-#if DEBUG
-#define LOG(x) std::cout << x << std::endl
-#else
-#define LOG(x)
-#endif
-
-#define BIT0 0b00000001
-#define BIT1 0b00000010
-#define BIT2 0b00000100
-#define BIT3 0b00001000
-#define BIT4 0b00010000
-#define BIT5 0b00100000
-#define BIT6 0b01000000
-#define BIT7 0b10000000
-
-/** \brief CPU constructor; sets initial configuration including IP, SP, flags, etc. */
+/** \brief CPU constructor; sets initial configuration.
+ * 
+ * Sets initial configuration including IP = 0x0000, SP = 0x01FF, all flags = false. */
 CPU::CPU()
 {
     IP = 0x0000;
@@ -32,91 +17,28 @@ CPU::CPU()
 /** \brief CPU constructor which allows custom setting of IP and SP.
  * \param ip The starting instruction pointer.
  * \param sp The starting stack pointer.
+ * 
+ * Sets initial values of the SP and IP to the specified value, and sets all flags = false.
  */
-CPU::CPU(const unsigned int ip, const unsigned int sp)
+CPU::CPU(const Word ip, const Word sp)
 {
-    IP = static_cast<Word>(ip);
-    SP = static_cast<Word>(sp);
+    IP = ip;
+    SP = sp;
     C = Z = I = D = B = V = N = false;
-}
-
-/** \brief Sets appropriate flags after performing LDA operations. */
-void CPU::LDA_set_CPU_flags()
-{
-    N = (A & BIT7);
-    Z = (A == 0);
-}
-
-/** \brief Sets appropriate flags after performing a CMP operation.
- * \param data_from_memory The flags to set depend on the data read from memory to do the comparison.
- */
-void CPU::CMP_set_CPU_flags(const Byte data_from_memory)
-{
-    int difference = static_cast<int>(A - data_from_memory);
-    C = (A >= data_from_memory);
-    Z = (A == data_from_memory);
-    N = (difference & BIT7);
-}
-
-/** \brief Sets appropriate CPU flags following an EOR operation. */
-void CPU::EOR_set_CPU_flags()
-{
-    LDA_set_CPU_flags();
-}
-
-/** \brief Sets appropriate CPU flags following a DEC operation. DEC changes the value
- * in memory, and the N and Z flags are set against the new value.
- * \param data_from_memory The new value of the byte in memory.
- */
-void CPU::DEC_set_CPU_flags(const Byte data_from_memory)
-{
-    N = (data_from_memory & BIT7);  // Set N on if sign bit of result is set.
-    Z = (data_from_memory == 0);    // Set Z on if result is zero.
-}
-
-/** \brief Sets appropriate CPU flags following an INC operation. INC changes the value
- * in memory, and the N and Z flags are set against the new value.
- * \param data_from_memory The new value of the byte in memory.
- */
-void CPU::INC_set_CPU_flags(const Byte data_from_memory)
-{
-    DEC_set_CPU_flags(data_from_memory);
-}
-
-/** \brief Sets appropriuate flags after performing ORA operation. */
-void CPU::ORA_set_CPU_flags()
-{
-    LDA_set_CPU_flags();
-}
-
-/** \brief Sets appropriate flags after performing LDX operations.. */
-void CPU::LDX_set_CPU_flags()
-{
-    N = (X & BIT7);
-    Z = (X == 0);
-}
-
-/** \brief Sets appropriate flags after performing LDY operations. */
-void CPU::LDY_set_CPU_flags()
-{
-    N = (Y & BIT7);
-    Z = (Y == 0);
-}
-
-/** \brief Sets appropriate flags after performing TAX operation. */
-void CPU::TAX_set_CPU_flags()
-{
-    LDX_set_CPU_flags();
-}
-
-/** \brief Sets appropriate flags after performing TXA operation. */
-void CPU::TXA_set_CPU_flags()
-{
-    LDA_set_CPU_flags();
 }
 
 /** \brief Runs the loaded program while CPU cycles are available to spend.
  * \param memory A reference to the main memory of the system. The CPU reads and writes this memory.
+ * \param cycles The new supply of cycles.
+ * \return Code indicating whether to continue or stop running the CPU.
+ * 
+ * The CPU stores a count of available cycles. When the run function is called, the
+ * supplied cycles will be added to this internal count, and the CPU will then execute
+ * instructions until the internal supply is exhausted.
+ * 
+ * The internal supply can become slightly negative, since instructions take different
+ * numbers of cycles to execute, and this cannot be predicted ahead of time. This
+ * will be reflected in the next call to run(), since the negative supply is remembered.
  */
 int CPU::run(Memory& memory, const int cycles)
 {
@@ -124,23 +46,23 @@ int CPU::run(Memory& memory, const int cycles)
     
     while (cycles_available > 0)
     {
-        // #if DEBUG
-        // std::cout << *this << "\n";
-        // std::cout << memory << "\n";
-        // #endif
-
         // Reset the page crossing flag in case it was left on from the last iteration.
         page_crossed = false;
 
         // TODO Interrupt handler should go here.
 
         // Grab an instruction from RAM.
-        Byte instruction = get_byte(memory);
+        Byte instruction = get_data_immediate(memory);
 
         // We increment the instruction pointer to point to the next byte in memory.
         IP++;
 
-        LOG("N" << N << " " << "V" << V << " " << "B" << B << " " << "D" << D << " " << "I" << I << " " << "Z" << Z << " " << "C" << C << "    " << std::hex << "IP:" << std::setw(4) << (int)IP << "   " << "SP:" << std::setw(4) << (int)SP << "   " << "A:" << std::setw(2) << (int)A << "   " << "X:" << std::setw(2) << (int)X << "   " << "Y:" << std::setw(2) << (int)Y << "   " << instruction_names[instruction]);
+        LOG(
+            "N" << N << " " << "V" << V << " " << "B" << B << " " << "D" << D << " " << "I" << I << " " << "Z" << Z 
+            << " " << "C" << C << "    " << std::hex << "IP:" << std::setw(4) << (int)IP << "   " << "SP:" 
+            << std::setw(4) << (int)SP << "   " << "A:" << std::setw(2) << (int)A << "   " << "X:" << std::setw(2) 
+            << (int)X << "   " << "Y:" << std::setw(2) << (int)Y << "   " << instruction_names[instruction]
+        );
 
         switch (instruction)
         {
@@ -521,7 +443,6 @@ int CPU::run(Memory& memory, const int cycles)
                 break;
 
             case INSTR_6502_TAX:
-                // Copy A into X.
                 X = A;
                 TAX_set_CPU_flags();
                 use_cycles(2);
@@ -540,7 +461,6 @@ int CPU::run(Memory& memory, const int cycles)
                 break;
 
             case INSTR_6502_INX:
-                // Increment X.
                 X++;
                 INX_set_CPU_flags();
                 use_cycles(2);
@@ -553,7 +473,6 @@ int CPU::run(Memory& memory, const int cycles)
                 break;
 
             case INSTR_6502_LDX_IMMEDIATE:
-                // Load data into X.
                 X = get_data_immediate(memory);
                 IP++;
                 LDX_set_CPU_flags();
@@ -561,7 +480,6 @@ int CPU::run(Memory& memory, const int cycles)
                 break;
 
             case INSTR_6502_LDX_ZEROPAGE:
-                // Load data into X.
                 X = get_data_zeropage(memory);
                 IP++;
                 LDX_set_CPU_flags();
@@ -569,7 +487,6 @@ int CPU::run(Memory& memory, const int cycles)
                 break;
 
             case INSTR_6502_LDX_ZEROPAGE_Y:
-                // Load data into X.
                 X = get_data_zeropage(memory, Y);
                 IP++;
                 LDX_set_CPU_flags();
@@ -577,7 +494,6 @@ int CPU::run(Memory& memory, const int cycles)
                 break;
 
             case INSTR_6502_LDX_ABSOLUTE:
-                // Load data into X.
                 X = get_data_absolute(memory);
                 IP++;
                 IP++;
@@ -586,7 +502,6 @@ int CPU::run(Memory& memory, const int cycles)
                 break;
 
             case INSTR_6502_LDX_ABSOLUTE_Y:
-                // Load data into X.
                 X = get_data_absolute(memory, Y);
                 IP++;
                 IP++;
@@ -1456,7 +1371,6 @@ int CPU::run(Memory& memory, const int cycles)
 
             case INSTR_6502_JSR_ABSOLUTE:
                 {
-                    // Pushes (address minus one) of the return point onto the stack then sets program counter to target address
                     Word target_address = get_word(memory);
                     IP++;
                     memory[SP] = static_cast<Byte>(IP >> 8);
@@ -1660,7 +1574,8 @@ int CPU::run(Memory& memory, const int cycles)
                 break;
 
             default:
-                std::cout << "Unknown instruction: 0x" << std::hex << std::setw(2) << std::setfill('0') << (int)instruction << "\n";
+                std::cout << "Unknown instruction: 0x" << std::hex << std::setw(2) << std::setfill('0');
+                std::cout << (int)instruction << "\n";
                 return BREAK;
         }
     }
@@ -1741,8 +1656,7 @@ Word CPU::get_word(Memory& memory, const Word address) const
     return static_cast<Word>(val2 << 8) | val1;
 }
 
-/** \brief Get data byte from memory using absolute addressing, with data addressed by 
- * current instruction pointer.
+/** \brief Get data byte from memory using absolute addressing, with data addressed by current instruction pointer.
  * \param memory Reference to system memory.
  * \return 8-bit value from memory.
  */
@@ -1796,8 +1710,8 @@ void CPU::set_data_zeropage(Memory& memory, Byte data, Byte index)
     memory[data_address] = data;
 }
 
-/** \brief Get data byte from memory using absolute addressing, with data addressed by 
- * current instruction pointer and an index.
+/** \brief Get data byte from memory using absolute addressing, with data addressed by current instruction pointer and
+ * an index.
  * \param memory Reference to system memory.
  * \param index A byte to add to the address to be read from.
  * \return 8-bit value from memory.
@@ -1888,11 +1802,14 @@ Byte CPU::get_data_zeropage(Memory& memory, const Byte index) const
  * \param memory Reference to system memory.
  * \param address The zero page address of the first byte to be read.
  * \return 16-bit value from the zero page.
+ * 
+ * This function gets a word from the zero page in memory. Importantly, the FULL word is guaranteed to come from the
+ * zero page. If the low byte is at the end of the zero page, the high byte will come from the start of the zero page.
  */
 Word CPU::get_word_zpg_wrap(Memory& memory, const Byte address) const
 {
     Word val1 = static_cast<Word>(memory[address % 256]);
-    Word val2 = static_cast<Word>(memory[(address+1) % 256]);   // This wraps automatically since address is a Byte
+    Word val2 = static_cast<Word>(memory[(address+1) % 256]);
     return static_cast<Word>(val2 << 8) | val1;
 }
 
@@ -1925,8 +1842,8 @@ void CPU::set_data_indexed_indirect(Memory& memory, Byte data, Byte index)
     memory[target_address] = data;
 }
 
-/** \brief Get data from memory using the (indirect),y addressing mode.
- * Will set the page_crossed flag if a page is crossed.
+/** \brief Get data from memory using the (indirect),y addressing mode. Will set the page_crossed flag if a page is
+ * crossed.
  * \param memory Reference to system memory.
  * \param index Index to add to address.
  * \return 8-bit value from memory.
@@ -2010,36 +1927,6 @@ Byte CPU::flags_as_byte() const
     );
 }
 
-/** \brief Print a summary of the CPU state to an iostream.
- * \param stream Reference to stream to write to.
- * \param cpu Const reference to the CPU to be printed.
- * \return Reference to the stream being written to.
- */
-std::ostream& operator<<(std::ostream& stream, const CPU& cpu)
-{
-    stream << "A: 0x" << std::hex << std::setw(2) << std::setfill('0') << (int)cpu.A;
-    stream << "   X: 0x" << std::hex << std::setw(2) << std::setfill('0') << (int)cpu.X;
-    stream << "   Y: 0x" << std::hex << std::setw(2) << std::setfill('0') << (int)cpu.Y;
-    stream << "   IP: 0x" << std::hex << std::setw(4) << std::setfill('0') << (int)cpu.IP;
-    stream << "   SP: 0x" << std::hex << std::setw(4) << std::setfill('0') << (int)cpu.SP;
-    stream << "\nFlags: ";
-    stream << (int)cpu.N;
-    stream << (int)cpu.V;
-    stream << "-";
-    stream << (int)cpu.B;
-    stream << (int)cpu.D;
-    stream << (int)cpu.I;
-    stream << (int)cpu.Z;
-    stream << (int)cpu.C;
-    return stream;
-}
-
-/** \brief Set CPU flags following an AND operation. */
-void CPU::AND_set_CPU_flags()
-{
-    LDA_set_CPU_flags();
-}
-
 /** \brief Increases the number of available CPU cycles.
  * \param cycles_to_add How much to increase the count of available cycles.
  */
@@ -2056,58 +1943,12 @@ void CPU::use_cycles(int cycles_to_use)
     cycles_available -= cycles_to_use;
 }
 
-/** \brief Set CPU flags following DEX operation. */
-void CPU::DEX_set_CPU_flags()
-{
-    LDX_set_CPU_flags();
-}
-
-/** \brief Set CPU flags following INX operaiton. */
-void CPU::INX_set_CPU_flags()
-{
-    LDX_set_CPU_flags();
-}
-
-/** Set CPU flagas following DEY operation. */
-void CPU::DEY_set_CPU_flags()
-{
-    LDY_set_CPU_flags();
-}
-
-/** \brief Set CPU flags following INY operation. */
-void CPU::INY_set_CPU_flags()
-{
-    LDY_set_CPU_flags();
-}
-
-/** \brief Set CPU flags following CPX operation. 
- * \param data The setting of the flags depends upon some non-stored calculation result.
- * 
- * The non-stored result of the calculation is passed to this function. The carry (C) flag is set if the value
- * is greater than or equal to zero. The zero (Z) flag is set if the value is equal to zero. The negative (N)
- * flag is set if bit 7 of the value is equal to one; this is the sign bit if the value is interpreted as a signed.
- */
-void CPU::CPX_set_CPU_flags(const int data)
-{
-    C = (data >= 0);
-    Z = (data == 0);
-    N = (data & BIT7);
-}
-
-/** \brief Set CPU flags following CPY operation.
- * \param data The setting of the flags depends upon some non-stored calculation result.
- */
-void CPU::CPY_set_CPU_flags(const int data)
-{
-    CPX_set_CPU_flags(data);
-}
-
 /** \brief Set the instruction pointer of the CPU.
  * \param newIP The new value of the instruction pointer.
  */
 void CPU::setIP(const Word newIP)
 {
-    // Bounds checking on IP value.
+    // TODO Bounds checking on IP value.
     this->IP = newIP;
 }
 
@@ -2116,7 +1957,7 @@ void CPU::setIP(const Word newIP)
  */
 void CPU::setSP(const Word newSP)
 {
-    // Bounds checking on SP value.
+    // TODO Bounds checking on SP value.
     this->SP = newSP;
 }
 
