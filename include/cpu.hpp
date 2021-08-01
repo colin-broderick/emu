@@ -2,6 +2,7 @@
 #define CPU_H
 
 #include <map>
+#include <string>
 
 #include "utils.hpp"
 
@@ -377,7 +378,7 @@ class CPU
     public:
         // Constructors ---------------------------------------------------------------------------------------------------------
         CPU();
-        CPU(const unsigned int ip, const unsigned int sp);
+        CPU(const Word ip, const Word sp);
 
         // Setters --------------------------------------------------------------------------------------------------------------
         void setIP(const Word newIP);

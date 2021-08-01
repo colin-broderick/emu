@@ -4,24 +4,9 @@
 #include "cpu.hpp"
 #include "memory.hpp"
 
-#define DEBUG 1
-
-#if DEBUG
-#define LOG(x) std::cout << x << std::endl
-#else
-#define LOG(x)
-#endif
-
-#define BIT0 0b00000001
-#define BIT1 0b00000010
-#define BIT2 0b00000100
-#define BIT3 0b00001000
-#define BIT4 0b00010000
-#define BIT5 0b00100000
-#define BIT6 0b01000000
-#define BIT7 0b10000000
-
-/** \brief CPU constructor; sets initial configuration including IP, SP, flags, etc. */
+/** \brief CPU constructor; sets initial configuration.
+ * 
+ * Sets initial configuration including IP = 0x0000, SP = 0x01FF, all flags = false. */
 CPU::CPU()
 {
     IP = 0x0000;
@@ -32,87 +17,14 @@ CPU::CPU()
 /** \brief CPU constructor which allows custom setting of IP and SP.
  * \param ip The starting instruction pointer.
  * \param sp The starting stack pointer.
+ * 
+ * Sets initial values of the SP and IP to the specified value, and sets all flags = false.
  */
-CPU::CPU(const unsigned int ip, const unsigned int sp)
+CPU::CPU(const Word ip, const Word sp)
 {
-    IP = static_cast<Word>(ip);
-    SP = static_cast<Word>(sp);
+    IP = ip;
+    SP = sp;
     C = Z = I = D = B = V = N = false;
-}
-
-/** \brief Sets appropriate flags after performing LDA operations. */
-void CPU::LDA_set_CPU_flags()
-{
-    N = (A & BIT7);
-    Z = (A == 0);
-}
-
-/** \brief Sets appropriate flags after performing a CMP operation.
- * \param data_from_memory The flags to set depend on the data read from memory to do the comparison.
- */
-void CPU::CMP_set_CPU_flags(const Byte data_from_memory)
-{
-    int difference = static_cast<int>(A - data_from_memory);
-    C = (A >= data_from_memory);
-    Z = (A == data_from_memory);
-    N = (difference & BIT7);
-}
-
-/** \brief Sets appropriate CPU flags following an EOR operation. */
-void CPU::EOR_set_CPU_flags()
-{
-    LDA_set_CPU_flags();
-}
-
-/** \brief Sets appropriate CPU flags following a DEC operation. DEC changes the value
- * in memory, and the N and Z flags are set against the new value.
- * \param data_from_memory The new value of the byte in memory.
- */
-void CPU::DEC_set_CPU_flags(const Byte data_from_memory)
-{
-    N = (data_from_memory & BIT7);  // Set N on if sign bit of result is set.
-    Z = (data_from_memory == 0);    // Set Z on if result is zero.
-}
-
-/** \brief Sets appropriate CPU flags following an INC operation. INC changes the value
- * in memory, and the N and Z flags are set against the new value.
- * \param data_from_memory The new value of the byte in memory.
- */
-void CPU::INC_set_CPU_flags(const Byte data_from_memory)
-{
-    DEC_set_CPU_flags(data_from_memory);
-}
-
-/** \brief Sets appropriuate flags after performing ORA operation. */
-void CPU::ORA_set_CPU_flags()
-{
-    LDA_set_CPU_flags();
-}
-
-/** \brief Sets appropriate flags after performing LDX operations.. */
-void CPU::LDX_set_CPU_flags()
-{
-    N = (X & BIT7);
-    Z = (X == 0);
-}
-
-/** \brief Sets appropriate flags after performing LDY operations. */
-void CPU::LDY_set_CPU_flags()
-{
-    N = (Y & BIT7);
-    Z = (Y == 0);
-}
-
-/** \brief Sets appropriate flags after performing TAX operation. */
-void CPU::TAX_set_CPU_flags()
-{
-    LDX_set_CPU_flags();
-}
-
-/** \brief Sets appropriate flags after performing TXA operation. */
-void CPU::TXA_set_CPU_flags()
-{
-    LDA_set_CPU_flags();
 }
 
 /** \brief Runs the loaded program while CPU cycles are available to spend.
@@ -2034,12 +1946,6 @@ std::ostream& operator<<(std::ostream& stream, const CPU& cpu)
     return stream;
 }
 
-/** \brief Set CPU flags following an AND operation. */
-void CPU::AND_set_CPU_flags()
-{
-    LDA_set_CPU_flags();
-}
-
 /** \brief Increases the number of available CPU cycles.
  * \param cycles_to_add How much to increase the count of available cycles.
  */
@@ -2054,52 +1960,6 @@ void CPU::add_cycles(int cycles_to_add)
 void CPU::use_cycles(int cycles_to_use)
 {
     cycles_available -= cycles_to_use;
-}
-
-/** \brief Set CPU flags following DEX operation. */
-void CPU::DEX_set_CPU_flags()
-{
-    LDX_set_CPU_flags();
-}
-
-/** \brief Set CPU flags following INX operaiton. */
-void CPU::INX_set_CPU_flags()
-{
-    LDX_set_CPU_flags();
-}
-
-/** Set CPU flagas following DEY operation. */
-void CPU::DEY_set_CPU_flags()
-{
-    LDY_set_CPU_flags();
-}
-
-/** \brief Set CPU flags following INY operation. */
-void CPU::INY_set_CPU_flags()
-{
-    LDY_set_CPU_flags();
-}
-
-/** \brief Set CPU flags following CPX operation. 
- * \param data The setting of the flags depends upon some non-stored calculation result.
- * 
- * The non-stored result of the calculation is passed to this function. The carry (C) flag is set if the value
- * is greater than or equal to zero. The zero (Z) flag is set if the value is equal to zero. The negative (N)
- * flag is set if bit 7 of the value is equal to one; this is the sign bit if the value is interpreted as a signed.
- */
-void CPU::CPX_set_CPU_flags(const int data)
-{
-    C = (data >= 0);
-    Z = (data == 0);
-    N = (data & BIT7);
-}
-
-/** \brief Set CPU flags following CPY operation.
- * \param data The setting of the flags depends upon some non-stored calculation result.
- */
-void CPU::CPY_set_CPU_flags(const int data)
-{
-    CPX_set_CPU_flags(data);
 }
 
 /** \brief Set the instruction pointer of the CPU.

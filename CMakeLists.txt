@@ -7,6 +7,6 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY build)
 
 include_directories(include)
 
-add_executable(${PROJECT_NAME} src/main.cpp src/cpu.cpp src/memory.cpp src/system.cpp)
+add_executable(${PROJECT_NAME} src/main.cpp src/cpu.cpp src/memory.cpp src/system.cpp src/cpu_flag_setters.cpp)
 target_link_libraries(${PROJECT_NAME} -pthread -O3)
 target_compile_options(${PROJECT_NAME} PUBLIC -Wall -Wconversion)
