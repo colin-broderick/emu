@@ -37,7 +37,6 @@ int CPU::run(Memory& memory, const int cycles)
     while (cycles_available > 0)
     {
         // #if DEBUG
-        // std::cout << *this << "\n";
         // std::cout << memory << "\n";
         // #endif
 
@@ -1920,30 +1919,6 @@ Byte CPU::flags_as_byte() const
         | (Z << 1) 
         | (C << 0)
     );
-}
-
-/** \brief Print a summary of the CPU state to an iostream.
- * \param stream Reference to stream to write to.
- * \param cpu Const reference to the CPU to be printed.
- * \return Reference to the stream being written to.
- */
-std::ostream& operator<<(std::ostream& stream, const CPU& cpu)
-{
-    stream << "A: 0x" << std::hex << std::setw(2) << std::setfill('0') << (int)cpu.A;
-    stream << "   X: 0x" << std::hex << std::setw(2) << std::setfill('0') << (int)cpu.X;
-    stream << "   Y: 0x" << std::hex << std::setw(2) << std::setfill('0') << (int)cpu.Y;
-    stream << "   IP: 0x" << std::hex << std::setw(4) << std::setfill('0') << (int)cpu.IP;
-    stream << "   SP: 0x" << std::hex << std::setw(4) << std::setfill('0') << (int)cpu.SP;
-    stream << "\nFlags: ";
-    stream << (int)cpu.N;
-    stream << (int)cpu.V;
-    stream << "-";
-    stream << (int)cpu.B;
-    stream << (int)cpu.D;
-    stream << (int)cpu.I;
-    stream << (int)cpu.Z;
-    stream << (int)cpu.C;
-    return stream;
 }
 
 /** \brief Increases the number of available CPU cycles.
