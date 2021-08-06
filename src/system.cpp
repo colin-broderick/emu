@@ -158,7 +158,6 @@ void System::run()
     auto time = std::chrono::high_resolution_clock::now();
     auto interval = std::chrono::microseconds{CPU::microseconds_per_frame};
 
-    int cycles = 10;
     while (true)
     {
         for (int i = 0; i < CPU::cycles_per_frame; i++)
