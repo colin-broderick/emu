@@ -47,7 +47,6 @@ int main(int argc, char* argv[])
         NES.cpu.setIP(ip);
     }
 
-    std::cout << "SP:" << (int)NES.cpu.getSP() << std::endl;
     NES.run();
 
     return 0;

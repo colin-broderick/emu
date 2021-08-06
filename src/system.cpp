@@ -158,8 +158,15 @@ void System::run()
     auto time = std::chrono::high_resolution_clock::now();
     auto interval = std::chrono::microseconds{CPU::microseconds_per_frame};
 
-    while (cpu.run(memory, CPU::cycles_per_frame) != CPU::BREAK)
+    while (true)
     {
+        for (int i = 0; i < CPU::cycles_per_frame; i++)
+        {
+            if (cpu.run(memory, 1) == CPU::BREAK || ppu.run(memory, 3) == PPU::BREAK)
+            {
+                return;
+            };
+        }
         time += interval;
         std::this_thread::sleep_until(time);
     }

@@ -5,6 +5,7 @@
 #include <fstream>
 
 #include "cpu.hpp"
+#include "ppu.hpp"
 #include "memory.hpp"
 
 class System
@@ -12,6 +13,7 @@ class System
     public:
         // Attributes -----------------------------------------------------------------------------------------------------------
         CPU cpu;
+        PPU ppu;
         Memory memory;
 
         // Constructors ---------------------------------------------------------------------------------------------------------

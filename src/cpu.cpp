@@ -1976,3 +1976,9 @@ Word CPU::getSP() const
 {
     return this->SP;
 }
+
+/** \brief Turn on the CPU's interrupt flag. */
+void CPU::set_interrupt()
+{
+    this->I = true;
+}
