@@ -852,7 +852,7 @@ Cpu6502::ReturnCode Cpu6502::run(Memory &memory, const int cycles)
 
         case INSTR_6502_ASL_ACCUMULATOR:
             C = (A & BIT7);
-            A = A << 1;
+            A = static_cast<Byte>(A << 1);
             Z = (A == 0);
             N = (A & BIT7);
             use_cycles(2);
@@ -862,7 +862,7 @@ Cpu6502::ReturnCode Cpu6502::run(Memory &memory, const int cycles)
         {
             Byte data = get_data_zeropage(memory);
             C = (data & BIT7);
-            data = data << 1;
+            data = static_cast<Byte>(data << 1);
             Z = (data == 0);
             N = (data & BIT7);
             set_data_zeropage(memory, data);
@@ -875,7 +875,7 @@ Cpu6502::ReturnCode Cpu6502::run(Memory &memory, const int cycles)
         {
             Byte data = get_data_zeropage(memory, X);
             C = (data & BIT7);
-            data = data << 1;
+            data = static_cast<Byte>(data << 1);
             Z = (data == 0);
             N = (data & BIT7);
             set_data_zeropage(memory, data, X);
@@ -888,7 +888,7 @@ Cpu6502::ReturnCode Cpu6502::run(Memory &memory, const int cycles)
         {
             Byte data = get_data_absolute(memory);
             C = (data & BIT7);
-            data = data << 1;
+            data = static_cast<Byte>(data << 1);
             Z = (data == 0);
             N = (data & BIT7);
             set_data_absolute(memory, data);
@@ -902,7 +902,7 @@ Cpu6502::ReturnCode Cpu6502::run(Memory &memory, const int cycles)
         {
             Byte data = get_data_absolute(memory, X);
             C = (data & BIT7);
-            data = data << 1;
+            data = static_cast<Byte>(data << 1);
             Z = (data == 0);
             N = (data & BIT7);
             set_data_absolute(memory, data, X);
@@ -1045,7 +1045,7 @@ Cpu6502::ReturnCode Cpu6502::run(Memory &memory, const int cycles)
 
         case INSTR_6502_ROR_ACCUMULATOR:
         {
-            Byte tempC = static_cast<Byte>(C) << 7;
+            Byte tempC = static_cast<Byte>(C << 7);
             C = (A & BIT0);
             A = (A >> 1) | tempC;
             Z = (A == 0);
@@ -1057,7 +1057,7 @@ Cpu6502::ReturnCode Cpu6502::run(Memory &memory, const int cycles)
         case INSTR_6502_ROR_ZEROPAGE:
         {
             Byte data = get_data_zeropage(memory);
-            Byte tempC = static_cast<Byte>(C) << 7;
+            Byte tempC = static_cast<Byte>(C << 7);
             C = (data & BIT0);
             data = (data >> 1) | tempC;
             Z = (data == 0);
@@ -1071,7 +1071,7 @@ Cpu6502::ReturnCode Cpu6502::run(Memory &memory, const int cycles)
         case INSTR_6502_ROR_ZEROPAGE_X:
         {
             Byte data = get_data_zeropage(memory, X);
-            Byte tempC = static_cast<Byte>(C) << 7;
+            Byte tempC = static_cast<Byte>(C << 7);
             C = (data & BIT0);
             data = (data >> 1) | tempC;
             Z = (data == 0);
@@ -1085,7 +1085,7 @@ Cpu6502::ReturnCode Cpu6502::run(Memory &memory, const int cycles)
         case INSTR_6502_ROR_ABSOLUTE:
         {
             Byte data = get_data_absolute(memory);
-            Byte tempC = static_cast<Byte>(C) << 7;
+            Byte tempC = static_cast<Byte>(C << 7);
             C = (data & BIT0);
             data = (data >> 1) | tempC;
             Z = (data == 0);
@@ -1100,7 +1100,7 @@ Cpu6502::ReturnCode Cpu6502::run(Memory &memory, const int cycles)
         case INSTR_6502_ROR_ABSOLUTE_X:
         {
             Byte data = get_data_absolute(memory, X);
-            Byte tempC = static_cast<Byte>(C) << 7;
+            Byte tempC = static_cast<Byte>(C << 7);
             C = (data & BIT0);
             data = (data >> 1) | tempC;
             Z = (data == 0);
