@@ -278,8 +278,9 @@ private:
 
 public:
     constexpr static int CPU_frequency = 1790000; // Hz
-    constexpr static int cycles_per_frame = 29833;
-    constexpr static int microseconds_per_frame = 16667;
+    constexpr static int frame_rate = 60;
+    constexpr static int cycles_per_frame = CPU_frequency / frame_rate;
+    constexpr static int microseconds_per_frame = 1000000 / frame_rate;
 
     /** CPU return codes. The CPU will generally run until it exhausts the supply of cycles, but under
      * certain conditions will return one of these codes. */

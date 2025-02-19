@@ -4,6 +4,8 @@
 
 #include "system.hpp"
 
+constexpr uint32_t ROM_BUFFER_SIZE = 0xFFFF;
+
 /** \brief Constructor for the NES system. */
 System::System()
 {
@@ -16,10 +18,10 @@ System::System()
 bool System::load_rom(const std::string &filename)
 {
     std::ifstream input_file(filename, std::ios::binary);
-    char buf[0xffff];
-    input_file.read(buf, 0xFFFF);
+    char buf[ROM_BUFFER_SIZE];
+    input_file.read(buf, ROM_BUFFER_SIZE);
     Byte *buf2 = (Byte *)buf;
-    std::memcpy(memory.data.data(), buf2, 0xFFFF);
+    std::memcpy(memory.data.data(), buf2, ROM_BUFFER_SIZE);
     return true;
 }
 
