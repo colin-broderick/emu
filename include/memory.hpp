@@ -9,24 +9,24 @@
 
 class Memory
 {
-    public:
-        // Attributes -----------------------------------------------------------------------------------------------------------
-        std::array<Byte, 0xffff> data;
+public:
+    // Attributes -----------------------------------------------------------------------------------------------------------
+    std::array<Byte, 0xffff> data;
 
-        // Constructors ---------------------------------------------------------------------------------------------------------
-        Memory();
+    // Constructors ---------------------------------------------------------------------------------------------------------
+    Memory();
 
-        // Operators ------------------------------------------------------------------------------------------------------------
-        Byte& operator[](int index);
-        friend std::ostream& operator<<(std::ostream& stream, Memory& memory);
+    // Operators ------------------------------------------------------------------------------------------------------------
+    Byte &operator[](int index);
+    friend std::ostream &operator<<(std::ostream &stream, Memory &memory);
 
-        // General --------------------------------------------------------------------------------------------------------------
-        void insert_rom(Byte start_address);
+    // General --------------------------------------------------------------------------------------------------------------
+    void insert_rom(Byte start_address);
 
-    private:
-        std::mutex mem_lock;
+private:
+    std::mutex mem_lock;
 };
 
-std::ostream& operator<<(std::ostream& stream, Memory& memory);
+std::ostream &operator<<(std::ostream &stream, Memory &memory);
 
 #endif

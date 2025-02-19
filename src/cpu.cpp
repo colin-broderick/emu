@@ -5,25 +5,25 @@
 #include "memory.hpp"
 
 /** \brief CPU constructor; sets initial configuration.
- * 
+ *
  * Sets initial configuration including IP = 0x0000, SP = 0x01FF, all flags = false. */
-CPU::CPU()
+Cpu6502::Cpu6502()
 {
-    IP = 0x0000;
-    SP = 0x01FF;
+    m_instruction_pointer = 0x0000;
+    m_stack_pointer = 0x01FF;
     C = Z = I = D = B = V = N = false;
 }
 
 /** \brief CPU constructor which allows custom setting of IP and SP.
  * \param ip The starting instruction pointer.
  * \param sp The starting stack pointer.
- * 
+ *
  * Sets initial values of the SP and IP to the specified value, and sets all flags = false.
  */
-CPU::CPU(const Word ip, const Word sp)
+Cpu6502::Cpu6502(const Word ip, const Word sp)
 {
-    IP = ip;
-    SP = sp;
+    m_instruction_pointer = ip;
+    m_stack_pointer = sp;
     C = Z = I = D = B = V = N = false;
 }
 
@@ -31,19 +31,19 @@ CPU::CPU(const Word ip, const Word sp)
  * \param memory A reference to the main memory of the system. The CPU reads and writes this memory.
  * \param cycles The new supply of cycles.
  * \return Code indicating whether to continue or stop running the CPU.
- * 
+ *
  * The CPU stores a count of available cycles. When the run function is called, the
  * supplied cycles will be added to this internal count, and the CPU will then execute
  * instructions until the internal supply is exhausted.
- * 
+ *
  * The internal supply can become slightly negative, since instructions take different
  * numbers of cycles to execute, and this cannot be predicted ahead of time. This
  * will be reflected in the next call to run(), since the negative supply is remembered.
  */
-int CPU::run(Memory& memory, const int cycles)
+Cpu6502::ReturnCode Cpu6502::run(Memory &memory, const int cycles)
 {
     add_cycles(cycles);
-    
+
     while (cycles_available > 0)
     {
         // Reset the page crossing flag in case it was left on from the last iteration.
@@ -55,1531 +55,1531 @@ int CPU::run(Memory& memory, const int cycles)
         Byte instruction = get_data_immediate(memory);
 
         // We increment the instruction pointer to point to the next byte in memory.
-        IP++;
+        m_instruction_pointer++;
 
         LOG(
-            "N" << N << " " << "V" << V << " " << "B" << B << " " << "D" << D << " " << "I" << I << " " << "Z" << Z 
-            << " " << "C" << C << "    " << std::hex << "IP:" << std::setw(4) << (int)IP << "   " << "SP:" 
-            << std::setw(4) << (int)SP << "   " << "A:" << std::setw(2) << (int)A << "   " << "X:" << std::setw(2) 
-            << (int)X << "   " << "Y:" << std::setw(2) << (int)Y << "   " << instruction_names[instruction]
-        );
+            "N" << N << " " << "V" << V << " " << "B" << B << " " << "D" << D << " " << "I" << I << " " << "Z" << Z
+                << " " << "C" << C << "    " << std::hex << "IP:" << std::setw(4) << (int)m_instruction_pointer << "   " << "SP:"
+                << std::setw(4) << (int)m_stack_pointer << "   " << "A:" << std::setw(2) << (int)A << "   " << "X:" << std::setw(2)
+                << (int)X << "   " << "Y:" << std::setw(2) << (int)Y << "   " << instruction_names[instruction]);
 
         switch (instruction)
         {
-            case INSTR_6502_LDA_IMMEDIATE:
-                A = get_data_immediate(memory);
-                IP++;
-                LDA_set_CPU_flags();
+        case INSTR_6502_LDA_IMMEDIATE:
+            A = get_data_immediate(memory);
+            m_instruction_pointer++;
+            LDA_set_CPU_flags();
+            use_cycles(2);
+            break;
+
+        case INSTR_6502_LDA_ZEROPAGE:
+            A = get_data_zeropage(memory);
+            m_instruction_pointer++;
+            LDA_set_CPU_flags();
+            use_cycles(3);
+            break;
+
+        case INSTR_6502_LDA_ZEROPAGE_X:
+            A = get_data_zeropage(memory, X);
+            m_instruction_pointer++;
+            LDA_set_CPU_flags();
+            use_cycles(4);
+            break;
+
+        case INSTR_6502_LDA_ABSOLUTE:
+            A = get_data_absolute(memory);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            LDA_set_CPU_flags();
+            use_cycles(4);
+            break;
+
+        case INSTR_6502_LDA_ABSOLUTE_X:
+            A = get_data_absolute(memory, X);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            LDA_set_CPU_flags();
+            use_cycles(4);
+            if (page_crossed)
+            {
+                use_cycles(1);
+            }
+            break;
+
+        case INSTR_6502_LDA_ABSOLUTE_Y:
+            A = get_data_absolute(memory, Y);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            LDA_set_CPU_flags();
+            use_cycles(4);
+            if (page_crossed)
+            {
+                use_cycles(1);
+            }
+            break;
+
+        case INSTR_6502_LDA_INDIRECT_X:
+            A = get_data_indexed_indirect(memory, X);
+            m_instruction_pointer++;
+            LDA_set_CPU_flags();
+            use_cycles(6);
+            break;
+
+        case INSTR_6502_LDA_INDIRECT_Y:
+            A = get_data_indirect_indexed(memory, Y);
+            m_instruction_pointer++;
+            LDA_set_CPU_flags();
+            use_cycles(5);
+            if (page_crossed)
+            {
+                use_cycles(1);
+            }
+            break;
+
+        case INSTR_6502_LDY_IMMEDIATE:
+            Y = get_data_immediate(memory);
+            m_instruction_pointer++;
+            LDY_set_CPU_flags();
+            use_cycles(2);
+            break;
+
+        case INSTR_6502_LDY_ZEROPAGE:
+            Y = get_data_zeropage(memory);
+            m_instruction_pointer++;
+            LDY_set_CPU_flags();
+            use_cycles(3);
+            break;
+
+        case INSTR_6502_LDY_ZEROPAGE_X:
+            Y = get_data_zeropage(memory, X);
+            m_instruction_pointer++;
+            LDY_set_CPU_flags();
+            use_cycles(4);
+            break;
+
+        case INSTR_6502_LDY_ABSOLUTE:
+            Y = get_data_absolute(memory);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            LDY_set_CPU_flags();
+            use_cycles(4);
+            break;
+
+        case INSTR_6502_LDY_ABSOLUTE_X:
+            Y = get_data_absolute(memory, X);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            LDY_set_CPU_flags();
+            use_cycles(4);
+            if (page_crossed)
+            {
+                use_cycles(1);
+            }
+            break;
+
+        case INSTR_6502_CMP_IMMEDIATE:
+        {
+            Byte data = get_data_immediate(memory);
+            m_instruction_pointer++;
+            CMP_set_CPU_flags(data);
+            use_cycles(2);
+        }
+        break;
+
+        case INSTR_6502_CMP_ZEROPAGE:
+        {
+            Byte data = get_data_zeropage(memory);
+            m_instruction_pointer++;
+            CMP_set_CPU_flags(data);
+            use_cycles(3);
+        }
+        break;
+
+        case INSTR_6502_CMP_ZEROPAGE_X:
+        {
+            Byte data = get_data_zeropage(memory, X);
+            m_instruction_pointer++;
+            CMP_set_CPU_flags(data);
+            use_cycles(4);
+        }
+        break;
+
+        case INSTR_6502_CMP_ABSOLUTE:
+        {
+            Byte data = get_data_absolute(memory);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            CMP_set_CPU_flags(data);
+            use_cycles(4);
+        }
+        break;
+
+        case INSTR_6502_CMP_ABSOLUTE_X:
+        {
+            Byte data = get_data_absolute(memory, X);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            CMP_set_CPU_flags(data);
+            use_cycles(4);
+            if (page_crossed)
+            {
+                use_cycles(1);
+            }
+        }
+        break;
+
+        case INSTR_6502_CMP_ABSOLUTE_Y:
+        {
+            Byte data = get_data_absolute(memory, Y);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            CMP_set_CPU_flags(data);
+            use_cycles(4);
+            if (page_crossed)
+            {
+                use_cycles(1);
+            }
+        }
+        break;
+
+        case INSTR_6502_CMP_INDIRECT_X:
+        {
+            Byte data = get_data_indexed_indirect(memory, X);
+            m_instruction_pointer++;
+            CMP_set_CPU_flags(data);
+            use_cycles(6);
+        }
+        break;
+
+        case INSTR_6502_CMP_INDIRECT_Y:
+        {
+            Byte data = get_data_indirect_indexed(memory, Y);
+            m_instruction_pointer++;
+            CMP_set_CPU_flags(data);
+            use_cycles(5);
+            if (page_crossed)
+            {
+                use_cycles(1);
+            }
+        }
+        break;
+
+        case INSTR_6502_EOR_IMMEDIATE:
+            A = A ^ get_data_immediate(memory);
+            m_instruction_pointer++;
+            EOR_set_CPU_flags();
+            use_cycles(2);
+            break;
+
+        case INSTR_6502_EOR_ZEROPAGE:
+            A = A ^ get_data_zeropage(memory);
+            m_instruction_pointer++;
+            EOR_set_CPU_flags();
+            use_cycles(3);
+            break;
+
+        case INSTR_6502_EOR_ZEROPAGE_X:
+            A = A ^ get_data_zeropage(memory, X);
+            m_instruction_pointer++;
+            EOR_set_CPU_flags();
+            use_cycles(4);
+            break;
+
+        case INSTR_6502_EOR_ABSOLUTE:
+            A = A ^ get_data_absolute(memory);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            EOR_set_CPU_flags();
+            use_cycles(4);
+            break;
+
+        case INSTR_6502_EOR_ABSOLUTE_X:
+            A = A ^ get_data_absolute(memory, X);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            EOR_set_CPU_flags();
+            use_cycles(4);
+            if (page_crossed)
+            {
+                use_cycles(1);
+            }
+            break;
+
+        case INSTR_6502_EOR_ABSOLUTE_Y:
+            A = A ^ get_data_absolute(memory, Y);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            EOR_set_CPU_flags();
+            use_cycles(4);
+            if (page_crossed)
+            {
+                use_cycles(1);
+            }
+            break;
+
+        case INSTR_6502_EOR_INDIRECT_X:
+        {
+            A = A ^ get_data_indexed_indirect(memory, X);
+            m_instruction_pointer++;
+            EOR_set_CPU_flags();
+            use_cycles(6);
+        }
+        break;
+
+        case INSTR_6502_EOR_INDIRECT_Y:
+            A = A ^ get_data_indirect_indexed(memory, Y);
+            m_instruction_pointer++;
+            EOR_set_CPU_flags();
+            use_cycles(5);
+            if (page_crossed)
+            {
+                use_cycles(1);
+            }
+            break;
+
+        case INSTR_6502_STA_ZEROPAGE:
+            set_data_zeropage(memory, A);
+            m_instruction_pointer++;
+            use_cycles(3);
+            break;
+
+        case INSTR_6502_STA_ZEROPAGE_X:
+            set_data_zeropage(memory, A, X);
+            m_instruction_pointer++;
+            use_cycles(4);
+            break;
+
+        case INSTR_6502_STA_ABSOLUTE:
+            set_data_absolute(memory, A);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            use_cycles(4);
+            break;
+
+        case INSTR_6502_STA_ABSOLUTE_X:
+            set_data_absolute(memory, A, X);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            use_cycles(5);
+            break;
+
+        case INSTR_6502_STA_ABSOLUTE_Y:
+            set_data_absolute(memory, A, Y);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            use_cycles(5);
+            break;
+
+        case INSTR_6502_STA_INDIRECT_X:
+            set_data_indexed_indirect(memory, A, X);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            use_cycles(6);
+            break;
+
+        case INSTR_6502_STA_INDIRECT_Y:
+            set_data_indirect_indexed(memory, A, Y);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            use_cycles(6);
+            break;
+
+        case INSTR_6502_TXS:
+            m_stack_pointer = static_cast<Word>(0x0100 | X);
+            use_cycles(2);
+            break;
+
+        case INSTR_6502_TSX:
+            X = static_cast<Byte>(m_stack_pointer & 0x00FF);
+            Z = (X == 0);
+            N = (X & BIT7);
+            use_cycles(2);
+            break;
+
+        case INSTR_6502_TYA:
+            A = Y;
+            Z = (A == 0);
+            N = (A & BIT7);
+            use_cycles(2);
+            break;
+
+        case INSTR_6502_STX_ZEROPAGE:
+            set_data_zeropage(memory, X);
+            m_instruction_pointer++;
+            use_cycles(3);
+            break;
+
+        case INSTR_6502_STX_ZEROPAGE_Y:
+            set_data_absolute(memory, X, Y);
+            m_instruction_pointer++;
+            use_cycles(4);
+            break;
+
+        case INSTR_6502_STX_ABSOLUTE:
+            set_data_absolute(memory, X);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            use_cycles(4);
+            break;
+
+        case INSTR_6502_STY_ZEROPAGE:
+            set_data_zeropage(memory, Y);
+            m_instruction_pointer++;
+            use_cycles(3);
+            break;
+
+        case INSTR_6502_STY_ZEROPAGE_X:
+            set_data_zeropage(memory, Y, X);
+            m_instruction_pointer++;
+            use_cycles(4);
+            break;
+
+        case INSTR_6502_STY_ABSOLUTE:
+            set_data_absolute(memory, Y);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            use_cycles(4);
+            break;
+
+        case INSTR_6502_TAX:
+            X = A;
+            TAX_set_CPU_flags();
+            use_cycles(2);
+            break;
+
+        case INSTR_6502_TAY:
+            Y = A;
+            Z = (Y == 0);
+            N = (Y & BIT7);
+            use_cycles(4);
+            break;
+
+        case INSTR_6502_TXA:
+            A = X;
+            TXA_set_CPU_flags();
+            use_cycles(2);
+            break;
+
+        case INSTR_6502_INX:
+            X++;
+            INX_set_CPU_flags();
+            use_cycles(2);
+            break;
+
+        case INSTR_6502_INY:
+            Y++;
+            INY_set_CPU_flags();
+            use_cycles(2);
+            break;
+
+        case INSTR_6502_LDX_IMMEDIATE:
+            X = get_data_immediate(memory);
+            m_instruction_pointer++;
+            LDX_set_CPU_flags();
+            use_cycles(2);
+            break;
+
+        case INSTR_6502_LDX_ZEROPAGE:
+            X = get_data_zeropage(memory);
+            m_instruction_pointer++;
+            LDX_set_CPU_flags();
+            use_cycles(3);
+            break;
+
+        case INSTR_6502_LDX_ZEROPAGE_Y:
+            X = get_data_zeropage(memory, Y);
+            m_instruction_pointer++;
+            LDX_set_CPU_flags();
+            use_cycles(4);
+            break;
+
+        case INSTR_6502_LDX_ABSOLUTE:
+            X = get_data_absolute(memory);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            LDX_set_CPU_flags();
+            use_cycles(4);
+            break;
+
+        case INSTR_6502_LDX_ABSOLUTE_Y:
+            X = get_data_absolute(memory, Y);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            LDX_set_CPU_flags();
+            use_cycles(4);
+            if (page_crossed)
+            {
+                use_cycles(1);
+            }
+            break;
+
+        case INSTR_6502_DEX:
+            X--;
+            DEX_set_CPU_flags();
+            use_cycles(2);
+            break;
+
+        case INSTR_6502_DEY:
+            Y--;
+            DEY_set_CPU_flags();
+            use_cycles(2);
+            break;
+
+        case INSTR_6502_CPX_IMMEDIATE:
+        {
+            int result = X - get_data_immediate(memory);
+            m_instruction_pointer++;
+            CPX_set_CPU_flags(result);
+            use_cycles(2);
+        }
+        break;
+
+        case INSTR_6502_CPX_ZEROPAGE:
+        {
+            int result = X - get_data_zeropage(memory);
+            m_instruction_pointer++;
+            CPX_set_CPU_flags(result);
+            use_cycles(3);
+        }
+        break;
+
+        case INSTR_6502_CPX_ABSOLUTE:
+        {
+            int result = X - get_data_absolute(memory);
+            m_instruction_pointer++;
+            CPX_set_CPU_flags(result);
+            use_cycles(4);
+        }
+        break;
+
+        case INSTR_6502_CPY_IMMEDIATE:
+        {
+            int result = Y - get_data_immediate(memory);
+            CPY_set_CPU_flags(result);
+            use_cycles(2);
+            m_instruction_pointer++;
+        }
+        break;
+
+        case INSTR_6502_CPY_ZEROPAGE:
+        {
+            int result = Y - get_data_zeropage(memory);
+            CPY_set_CPU_flags(result);
+            use_cycles(3);
+            m_instruction_pointer++;
+        }
+        break;
+
+        case INSTR_6502_CPY_ABSOLUTE:
+        {
+            int result = Y - get_data_absolute(memory);
+            CPY_set_CPU_flags(result);
+            use_cycles(4);
+            m_instruction_pointer++;
+        }
+        break;
+
+        case INSTR_6502_BNE_RELATIVE:
+        {
+            // Remember the starting page so we know if we've moved to a new page.
+            Byte current_page = static_cast<Byte>(m_instruction_pointer >> 8);
+            use_cycles(2);
+
+            if (!Z)
+            {
+                Byte dist = get_data_relative(memory);
+                branch_relative(dist);
+                use_cycles(1);
+            }
+            m_instruction_pointer++;
+
+            // This should take two additional clock cycles if the branch leads to a new page.
+            Byte new_page = static_cast<Byte>(m_instruction_pointer >> 8);
+            if (current_page != new_page)
+            {
                 use_cycles(2);
-                break;
+            }
+        }
+        break;
 
-            case INSTR_6502_LDA_ZEROPAGE:
-                A = get_data_zeropage(memory);
-                IP++;
-                LDA_set_CPU_flags();
-                use_cycles(3);
-                break;
+        case INSTR_6502_BEQ_RELATIVE:
+        {
+            // Remember the starting page so we know if we've moved to a new page.
+            Byte current_page = static_cast<Byte>(m_instruction_pointer >> 8);
+            use_cycles(2);
 
-            case INSTR_6502_LDA_ZEROPAGE_X:
-                A = get_data_zeropage(memory, X);
-                IP++;
-                LDA_set_CPU_flags();
-                use_cycles(4);
-                break;
+            if (Z)
+            {
+                Byte dist = get_data_relative(memory);
+                branch_relative(dist);
+                use_cycles(1);
+            }
+            m_instruction_pointer++;
 
-            case INSTR_6502_LDA_ABSOLUTE:
-                A = get_data_absolute(memory);
-                IP++;
-                IP++;
-                LDA_set_CPU_flags();
-                use_cycles(4);
-                break;
-
-            case INSTR_6502_LDA_ABSOLUTE_X:
-                A = get_data_absolute(memory, X);
-                IP++;
-                IP++;
-                LDA_set_CPU_flags();
-                use_cycles(4);
-                if (page_crossed)
-                {
-                    use_cycles(1);
-                }
-                break;
-
-            case INSTR_6502_LDA_ABSOLUTE_Y:
-                A = get_data_absolute(memory, Y);
-                IP++;
-                IP++;
-                LDA_set_CPU_flags();
-                use_cycles(4);
-                if (page_crossed)
-                {
-                    use_cycles(1);
-                }
-                break;
-            
-            case INSTR_6502_LDA_INDIRECT_X:
-                A = get_data_indexed_indirect(memory, X);
-                IP++;
-                LDA_set_CPU_flags();
-                use_cycles(6);
-                break;
-
-            case INSTR_6502_LDA_INDIRECT_Y:
-                A = get_data_indirect_indexed(memory, Y);
-                IP++;
-                LDA_set_CPU_flags();
-                use_cycles(5);
-                if (page_crossed)
-                {
-                    use_cycles(1);
-                }
-                break;
-
-            case INSTR_6502_LDY_IMMEDIATE:
-                Y = get_data_immediate(memory);
-                IP++;
-                LDY_set_CPU_flags();
+            // This should take two additional clock cycles if the branch leads to a new page.
+            Byte new_page = static_cast<Byte>(m_instruction_pointer >> 8);
+            if (current_page != new_page)
+            {
                 use_cycles(2);
-                break;
+            }
+        }
+        break;
 
-            case INSTR_6502_LDY_ZEROPAGE:
-                Y = get_data_zeropage(memory);
-                IP++;
-                LDY_set_CPU_flags();
-                use_cycles(3);
-                break;
+        case INSTR_6502_BMI_RELATIVE:
+        {
+            Byte current_page = static_cast<Byte>(m_instruction_pointer >> 8);
+            use_cycles(2);
 
-            case INSTR_6502_LDY_ZEROPAGE_X:
-                Y = get_data_zeropage(memory, X);
-                IP++;
-                LDY_set_CPU_flags();
-                use_cycles(4);
-                break;
+            if (N)
+            {
+                Byte dist = get_data_relative(memory);
+                branch_relative(dist);
+                use_cycles(1);
+            }
+            m_instruction_pointer++;
 
-            case INSTR_6502_LDY_ABSOLUTE:
-                Y = get_data_absolute(memory);
-                IP++;
-                IP++;
-                LDY_set_CPU_flags();
-                use_cycles(4);
-                break;
-
-            case INSTR_6502_LDY_ABSOLUTE_X:
-                Y = get_data_absolute(memory, X);
-                IP++;
-                IP++;
-                LDY_set_CPU_flags();
-                use_cycles(4);
-                if (page_crossed)
-                {
-                    use_cycles(1);
-                }
-                break;
-
-            case INSTR_6502_CMP_IMMEDIATE:
-                {
-                    Byte data = get_data_immediate(memory);
-                    IP++;
-                    CMP_set_CPU_flags(data);
-                    use_cycles(2);
-                }
-                break;
-
-            case INSTR_6502_CMP_ZEROPAGE:
-                {
-                    Byte data = get_data_zeropage(memory);
-                    IP++;
-                    CMP_set_CPU_flags(data);
-                    use_cycles(3);
-                }
-                break;
-
-            case INSTR_6502_CMP_ZEROPAGE_X:
-                {
-                    Byte data = get_data_zeropage(memory, X);
-                    IP++;
-                    CMP_set_CPU_flags(data);
-                    use_cycles(4);
-                }
-                break;
-
-            case INSTR_6502_CMP_ABSOLUTE:
-                {
-                    Byte data = get_data_absolute(memory);
-                    IP++;
-                    IP++;
-                    CMP_set_CPU_flags(data);
-                    use_cycles(4);
-                }
-                break;
-
-            case INSTR_6502_CMP_ABSOLUTE_X:
-                {
-                    Byte data = get_data_absolute(memory, X);
-                    IP++;
-                    IP++;
-                    CMP_set_CPU_flags(data);
-                    use_cycles(4);
-                    if (page_crossed)
-                    {
-                        use_cycles(1);
-                    }
-                }
-                break;
-
-            case INSTR_6502_CMP_ABSOLUTE_Y:
-                {
-                    Byte data = get_data_absolute(memory, Y);
-                    IP++;
-                    IP++;
-                    CMP_set_CPU_flags(data);
-                    use_cycles(4);
-                    if (page_crossed)
-                    {
-                        use_cycles(1);
-                    }
-                }
-                break;
-
-            case INSTR_6502_CMP_INDIRECT_X:
-                {
-                    Byte data = get_data_indexed_indirect(memory, X);
-                    IP++;
-                    CMP_set_CPU_flags(data);
-                    use_cycles(6);
-                }
-                break;
-
-            case INSTR_6502_CMP_INDIRECT_Y:
-                {
-                    Byte data = get_data_indirect_indexed(memory, Y);
-                    IP++;
-                    CMP_set_CPU_flags(data);
-                    use_cycles(5);
-                    if (page_crossed)
-                    {
-                        use_cycles(1);
-                    }
-                }
-                break;
-
-            case INSTR_6502_EOR_IMMEDIATE:
-                A = A ^ get_data_immediate(memory);
-                IP++;
-                EOR_set_CPU_flags();
+            Byte new_page = static_cast<Byte>(m_instruction_pointer >> 8);
+            if (current_page != new_page)
+            {
                 use_cycles(2);
-                break;
+            }
+        }
+        break;
 
-            case INSTR_6502_EOR_ZEROPAGE:
-                A = A ^ get_data_zeropage(memory);
-                IP++;
-                EOR_set_CPU_flags();
-                use_cycles(3);
-                break;
+        case INSTR_6502_BPL_RELATIVE:
+        {
+            Byte current_page = static_cast<Byte>(m_instruction_pointer >> 8);
+            use_cycles(2);
 
-            case INSTR_6502_EOR_ZEROPAGE_X:
-                A = A ^ get_data_zeropage(memory, X);
-                IP++;
-                EOR_set_CPU_flags();
-                use_cycles(4);
-                break;
+            if (!N)
+            {
+                Byte dist = get_data_relative(memory);
+                branch_relative(dist);
+                use_cycles(1);
+            }
+            m_instruction_pointer++;
 
-            case INSTR_6502_EOR_ABSOLUTE:
-                A = A ^ get_data_absolute(memory);
-                IP++;
-                IP++;
-                EOR_set_CPU_flags();
-                use_cycles(4);
-                break;
-
-            case INSTR_6502_EOR_ABSOLUTE_X:
-                A = A ^ get_data_absolute(memory, X);
-                IP++;
-                IP++;
-                EOR_set_CPU_flags();
-                use_cycles(4);
-                if (page_crossed)
-                {
-                    use_cycles(1);
-                }
-                break;
-
-            case INSTR_6502_EOR_ABSOLUTE_Y:
-                A = A ^ get_data_absolute(memory, Y);
-                IP++;
-                IP++;
-                EOR_set_CPU_flags();
-                use_cycles(4);
-                if (page_crossed)
-                {
-                    use_cycles(1);
-                }
-                break;
-
-            case INSTR_6502_EOR_INDIRECT_X:
-                {
-                    A = A ^ get_data_indexed_indirect(memory, X);
-                    IP++;
-                    EOR_set_CPU_flags();
-                    use_cycles(6);
-                }
-                break;
-
-            case INSTR_6502_EOR_INDIRECT_Y:
-                A = A ^ get_data_indirect_indexed(memory, Y);
-                IP++;
-                EOR_set_CPU_flags();
-                use_cycles(5);
-                if (page_crossed)
-                {
-                    use_cycles(1);
-                }
-                break;
-
-            case INSTR_6502_STA_ZEROPAGE:
-                set_data_zeropage(memory, A);
-                IP++;
-                use_cycles(3);
-                break;
-
-            case INSTR_6502_STA_ZEROPAGE_X:
-                set_data_zeropage(memory, A, X);
-                IP++;
-                use_cycles(4);
-                break;
-
-            case INSTR_6502_STA_ABSOLUTE:
-                set_data_absolute(memory, A);
-                IP++;
-                IP++;
-                use_cycles(4);
-                break;
-
-            case INSTR_6502_STA_ABSOLUTE_X:
-                set_data_absolute(memory, A, X);
-                IP++;
-                IP++;
-                use_cycles(5);
-                break;
-
-            case INSTR_6502_STA_ABSOLUTE_Y:
-                set_data_absolute(memory, A, Y);
-                IP++;
-                IP++;
-                use_cycles(5);
-                break;
-
-            case INSTR_6502_STA_INDIRECT_X:
-                set_data_indexed_indirect(memory, A, X);
-                IP++;
-                IP++;
-                use_cycles(6);
-                break;
-
-            case INSTR_6502_STA_INDIRECT_Y:
-                set_data_indirect_indexed(memory, A, Y);
-                IP++;
-                IP++;
-                use_cycles(6);
-                break;
-
-            case INSTR_6502_TXS:
-                SP = static_cast<Word>(0x0100 | X);
+            Byte new_page = static_cast<Byte>(m_instruction_pointer >> 8);
+            if (current_page != new_page)
+            {
                 use_cycles(2);
-                break;
+            }
+        }
+        break;
 
-            case INSTR_6502_TSX:
-                X = static_cast<Byte>(SP & 0x00FF);
-                Z = (X == 0);
-                N = (X & BIT7);
+        case INSTR_6502_BVC_RELATIVE:
+        {
+            Byte current_page = static_cast<Byte>(m_instruction_pointer >> 8);
+            use_cycles(2);
+
+            if (!V)
+            {
+                Byte dist = get_data_relative(memory);
+                branch_relative(dist);
+                use_cycles(1);
+            }
+            m_instruction_pointer++;
+
+            Byte new_page = static_cast<Byte>(m_instruction_pointer >> 8);
+            if (current_page != new_page)
+            {
                 use_cycles(2);
-                break;
+            }
+        }
+        break;
 
-            case INSTR_6502_TYA:
-                A = Y;
-                Z = (A == 0);
-                N = (A & BIT7);
+        case INSTR_6502_BVS_RELATIVE:
+        {
+            Byte current_page = static_cast<Byte>(m_instruction_pointer >> 8);
+            use_cycles(2);
+
+            if (V)
+            {
+                Byte dist = get_data_relative(memory);
+                branch_relative(dist);
+                use_cycles(1);
+            }
+            m_instruction_pointer++;
+
+            Byte new_page = static_cast<Byte>(m_instruction_pointer >> 8);
+            if (current_page != new_page)
+            {
                 use_cycles(2);
-                break;
+            }
+        }
+        break;
 
-            case INSTR_6502_STX_ZEROPAGE:
-                set_data_zeropage(memory, X);
-                IP++;
-                use_cycles(3);
-                break;
+        case INSTR_6502_BCC_RELATIVE:
+        {
+            Byte current_page = static_cast<Byte>(m_instruction_pointer >> 8);
+            use_cycles(2);
 
-            case INSTR_6502_STX_ZEROPAGE_Y:
-                set_data_absolute(memory, X, Y);
-                IP++;
-                use_cycles(4);
-                break;
+            if (!C)
+            {
+                Byte dist = get_data_relative(memory);
+                branch_relative(dist);
+                use_cycles(1);
+            }
+            m_instruction_pointer++;
 
-            case INSTR_6502_STX_ABSOLUTE:
-                set_data_absolute(memory, X);
-                IP++;
-                IP++;
-                use_cycles(4);
-                break;
-
-            case INSTR_6502_STY_ZEROPAGE:
-                set_data_zeropage(memory, Y);
-                IP++;
-                use_cycles(3);
-                break;
-
-            case INSTR_6502_STY_ZEROPAGE_X:
-                set_data_zeropage(memory, Y, X);
-                IP++;
-                use_cycles(4);
-                break;
-
-            case INSTR_6502_STY_ABSOLUTE:
-                set_data_absolute(memory, Y);
-                IP++;
-                IP++;
-                use_cycles(4);
-                break;
-
-            case INSTR_6502_TAX:
-                X = A;
-                TAX_set_CPU_flags();
+            Byte new_page = static_cast<Byte>(m_instruction_pointer >> 8);
+            if (current_page != new_page)
+            {
                 use_cycles(2);
-                break;
+            }
+        }
+        break;
 
-            case INSTR_6502_TAY:
-                Y = A;
-                Z = (Y == 0);
-                N = (Y & BIT7);
-                use_cycles(4);
+        case INSTR_6502_BCS_RELATIVE:
+        {
+            Byte current_page = static_cast<Byte>(m_instruction_pointer >> 8);
+            use_cycles(2);
 
-            case INSTR_6502_TXA:
-                A = X;
-                TXA_set_CPU_flags();
+            if (C)
+            {
+                Byte dist = get_data_relative(memory);
+                branch_relative(dist);
+                use_cycles(1);
+            }
+            m_instruction_pointer++;
+
+            Byte new_page = static_cast<Byte>(m_instruction_pointer >> 8);
+            if (current_page != new_page)
+            {
                 use_cycles(2);
-                break;
-
-            case INSTR_6502_INX:
-                X++;
-                INX_set_CPU_flags();
-                use_cycles(2);
-                break;
-
-            case INSTR_6502_INY:
-                Y++;
-                INY_set_CPU_flags();
-                use_cycles(2);
-                break;
-
-            case INSTR_6502_LDX_IMMEDIATE:
-                X = get_data_immediate(memory);
-                IP++;
-                LDX_set_CPU_flags();
-                use_cycles(2);
-                break;
-
-            case INSTR_6502_LDX_ZEROPAGE:
-                X = get_data_zeropage(memory);
-                IP++;
-                LDX_set_CPU_flags();
-                use_cycles(3);
-                break;
-
-            case INSTR_6502_LDX_ZEROPAGE_Y:
-                X = get_data_zeropage(memory, Y);
-                IP++;
-                LDX_set_CPU_flags();
-                use_cycles(4);
-                break;
-
-            case INSTR_6502_LDX_ABSOLUTE:
-                X = get_data_absolute(memory);
-                IP++;
-                IP++;
-                LDX_set_CPU_flags();
-                use_cycles(4);
-                break;
-
-            case INSTR_6502_LDX_ABSOLUTE_Y:
-                X = get_data_absolute(memory, Y);
-                IP++;
-                IP++;
-                LDX_set_CPU_flags();
-                use_cycles(4);
-                if (page_crossed)
-                {
-                    use_cycles(1);
-                }
-                break;
-
-            case INSTR_6502_DEX:
-                X--;
-                DEX_set_CPU_flags();
-                use_cycles(2);
-                break;
-
-            case INSTR_6502_DEY:
-                Y--;
-                DEY_set_CPU_flags();
-                use_cycles(2);
-                break;
-
-            case INSTR_6502_CPX_IMMEDIATE:
-                {
-                    int result = X - get_data_immediate(memory);
-                    IP++;
-                    CPX_set_CPU_flags(result);
-                    use_cycles(2);
-                }
-                break;
-                
-            case INSTR_6502_CPX_ZEROPAGE:
-                {
-                    int result = X - get_data_zeropage(memory);
-                    IP++;
-                    CPX_set_CPU_flags(result);
-                    use_cycles(3);
-                }
-                break;
-
-            case INSTR_6502_CPX_ABSOLUTE:
-                {
-                    int result = X - get_data_absolute(memory);
-                    IP++;
-                    CPX_set_CPU_flags(result);
-                    use_cycles(4);
-                }
-                break;
-
-            case INSTR_6502_CPY_IMMEDIATE:
-                {
-                    int result = Y - get_data_immediate(memory);
-                    CPY_set_CPU_flags(result);
-                    use_cycles(2);
-                    IP++;
-                }
-                break;
-
-            case INSTR_6502_CPY_ZEROPAGE:
-                {
-                    int result = Y - get_data_zeropage(memory);
-                    CPY_set_CPU_flags(result);
-                    use_cycles(3);
-                    IP++;
-                }
-                break;
-
-            case INSTR_6502_CPY_ABSOLUTE:
-                {
-                    int result = Y - get_data_absolute(memory);
-                    CPY_set_CPU_flags(result);
-                    use_cycles(4);
-                    IP++;
-                }
-                break;
-
-            case INSTR_6502_BNE_RELATIVE:
-                {
-                    // Remember the starting page so we know if we've moved to a new page.
-                    Byte current_page = static_cast<Byte>(IP >> 8);
-                    use_cycles(2);
-
-                    if (!Z)
-                    {
-                        Byte dist = get_data_relative(memory);
-                        branch_relative(dist);
-                        use_cycles(1);
-                    }
-                    IP++;
-
-                    // This should take two additional clock cycles if the branch leads to a new page.
-                    Byte new_page = static_cast<Byte>(IP >> 8);
-                    if (current_page != new_page)
-                    {
-                        use_cycles(2);
-                    }
-                }
-                break;
-
-            case INSTR_6502_BEQ_RELATIVE:
-                {
-                    // Remember the starting page so we know if we've moved to a new page.
-                    Byte current_page = static_cast<Byte>(IP >> 8);
-                    use_cycles(2);
-
-                    if (Z)
-                    {
-                        Byte dist = get_data_relative(memory);
-                        branch_relative(dist);
-                        use_cycles(1);
-                    }
-                    IP++;
-
-                    // This should take two additional clock cycles if the branch leads to a new page.
-                    Byte new_page = static_cast<Byte>(IP >> 8);
-                    if (current_page != new_page)
-                    {
-                        use_cycles(2);
-                    }
-                }
-                break;
-
-            case INSTR_6502_BMI_RELATIVE:
-                {
-                    Byte current_page = static_cast<Byte>(IP >> 8);
-                    use_cycles(2);
-
-                    if (N)
-                    {
-                        Byte dist = get_data_relative(memory);
-                        branch_relative(dist);
-                        use_cycles(1);
-                    }
-                    IP++;
-
-                    Byte new_page = static_cast<Byte>(IP >> 8);
-                    if (current_page != new_page)
-                    {
-                        use_cycles(2);
-                    }
-                }
-                break;
-
-            case INSTR_6502_BPL_RELATIVE:
-                {
-                    Byte current_page = static_cast<Byte>(IP >> 8);
-                    use_cycles(2);
-
-                    if (!N)
-                    {
-                        Byte dist = get_data_relative(memory);
-                        branch_relative(dist);
-                        use_cycles(1);
-                    }
-                    IP++;
-
-                    Byte new_page = static_cast<Byte>(IP >> 8);
-                    if (current_page != new_page)
-                    {
-                        use_cycles(2);
-                    }
-                }
-                break;
-            
-            case INSTR_6502_BVC_RELATIVE:
-                {
-                    Byte current_page = static_cast<Byte>(IP >> 8);
-                    use_cycles(2);
-
-                    if (!V)
-                    {
-                        Byte dist = get_data_relative(memory);
-                        branch_relative(dist);
-                        use_cycles(1);
-                    }
-                    IP++;
-
-                    Byte new_page = static_cast<Byte>(IP >> 8);
-                    if (current_page != new_page)
-                    {
-                        use_cycles(2);
-                    }
-                }
-                break;
-
-            case INSTR_6502_BVS_RELATIVE:
-                {
-                    Byte current_page = static_cast<Byte>(IP >> 8);
-                    use_cycles(2);
-
-                    if (V)
-                    {
-                        Byte dist = get_data_relative(memory);
-                        branch_relative(dist);
-                        use_cycles(1);
-                    }
-                    IP++;
-
-                    Byte new_page = static_cast<Byte>(IP >> 8);
-                    if (current_page != new_page)
-                    {
-                        use_cycles(2);
-                    }
-                }
-                break;
-
-            case INSTR_6502_BCC_RELATIVE:
-                {
-                    Byte current_page = static_cast<Byte>(IP >> 8);
-                    use_cycles(2);
-
-                    if (!C)
-                    {
-                        Byte dist = get_data_relative(memory);
-                        branch_relative(dist);
-                        use_cycles(1);
-                    }
-                    IP++;
-
-                    Byte new_page = static_cast<Byte>(IP >> 8);
-                    if (current_page != new_page)
-                    {
-                        use_cycles(2);
-                    }
-                }
-                break;
-
-            case INSTR_6502_BCS_RELATIVE:
-                {
-                    Byte current_page = static_cast<Byte>(IP >> 8);
-                    use_cycles(2);
-
-                    if (C)
-                    {
-                        Byte dist = get_data_relative(memory);
-                        branch_relative(dist);
-                        use_cycles(1);
-                    }
-                    IP++;
-
-                    Byte new_page = static_cast<Byte>(IP >> 8);
-                    if (current_page != new_page)
-                    {
-                        use_cycles(2);
-                    }
-                }
-                break;
-
-            case INSTR_6502_SED:
-                D = true;
-                use_cycles(2);
-                break;
-
-            case INSTR_6502_ORA_IMMEDIATE:
-                A |= get_data_immediate(memory);
-                IP++;
-                ORA_set_CPU_flags();
-                use_cycles(2);
-                break;
-
-            case INSTR_6502_ORA_ZEROPAGE:
-                A |= get_data_zeropage(memory);
-                IP++;
-                ORA_set_CPU_flags();
-                use_cycles(3);
-                break;
-
-            case INSTR_6502_ORA_ZEROPAGE_X:
-                A |= get_data_zeropage(memory, X);
-                IP++;
-                ORA_set_CPU_flags();
-                use_cycles(4);
-                break;
-
-            case INSTR_6502_ORA_ABSOLUTE:
-                A |= get_data_absolute(memory);
-                IP++;
-                IP++;
-                ORA_set_CPU_flags();
-                use_cycles(4);
-                break;
-
-            case INSTR_6502_ORA_ABSOLUTE_X:
-                A |= get_data_absolute(memory, X);
-                IP++;
-                IP++;
-                ORA_set_CPU_flags();
-                use_cycles(4);
-                if (page_crossed)
-                {
-                    use_cycles(1);
-                }
-                break;
-
-            case INSTR_6502_ORA_ABSOLUTE_Y:
-                A |= get_data_absolute(memory, Y);
-                IP++;
-                IP++;
-                ORA_set_CPU_flags();
-                use_cycles(4);
-                if (page_crossed)
-                {
-                    use_cycles(1);
-                }
-                break;
-
-            case INSTR_6502_ORA_INDIRECT_X:
-                A |= get_data_indexed_indirect(memory, X);
-                IP++;
-                ORA_set_CPU_flags();
-                use_cycles(6);
-                break;
-
-            case INSTR_6502_ORA_INDIRECT_Y:
-                A |= get_data_indirect_indexed(memory, Y);
-                IP++;
-                ORA_set_CPU_flags();
-                use_cycles(5);
-                if (page_crossed)
-                {
-                    use_cycles(1);
-                }
-                break;
-
-            case INSTR_6502_BIT_ZEROPAGE:
-                {
-                    Byte result = A & get_data_zeropage(memory);
-                    IP++;
-                    Z = (result == 0);
-                    V = (result & BIT6);
-                    N = (result & BIT7);
-                    use_cycles(3);
-                }
-                break;
-
-            case INSTR_6502_BIT_ABSOLUTE:
-                {
-                    Byte result = A & get_data_absolute(memory);
-                    IP++;
-                    IP++;
-                    Z = (result == 0);
-                    V = (result & BIT6);
-                    N = (result & BIT7);
-                    use_cycles(4);
-                }
-                break;
-
-            case INSTR_6502_ASL_ACCUMULATOR:
-                C = (A & BIT7);
-                A = A << 1;
-                Z = (A == 0);
-                N = (A & BIT7);
-                use_cycles(2);
-                break;
-
-            case INSTR_6502_ASL_ZEROPAGE:
-                {
-                    Byte data = get_data_zeropage(memory);
-                    C = (data & BIT7);
-                    data = data << 1;
-                    Z = (data == 0);
-                    N = (data & BIT7);
-                    set_data_zeropage(memory, data);
-                    IP++;
-                    use_cycles(5);
-                }
-                break;
-
-            case INSTR_6502_ASL_ZEROPAGE_X:
-                {
-                    Byte data = get_data_zeropage(memory, X);
-                    C = (data & BIT7);
-                    data = data << 1;
-                    Z = (data == 0);
-                    N = (data & BIT7);
-                    set_data_zeropage(memory, data, X);
-                    IP++;
-                    use_cycles(6);
-                }
-                break;
-
-            case INSTR_6502_ASL_ABSOLUTE:
-                {
-                    Byte data = get_data_absolute(memory);
-                    C = (data & BIT7);
-                    data = data << 1;
-                    Z = (data == 0);
-                    N = (data & BIT7);
-                    set_data_absolute(memory, data);
-                    IP++;
-                    IP++;
-                    use_cycles(6);
-                }
-                break;
-
-            case INSTR_6502_ASL_ABSOLUTE_X:
-                {
-                    Byte data = get_data_absolute(memory, X);
-                    C = (data & BIT7);
-                    data = data << 1;
-                    Z = (data == 0);
-                    N = (data & BIT7);
-                    set_data_absolute(memory, data, X);
-                    IP++;
-                    IP++;
-                    use_cycles(7);
-                }
-                break;
-
-            case INSTR_6502_LSR_ACCUMULATOR:
-                C = (A & BIT7);
-                A = A >> 1;
-                Z = (A == 0);
-                N = (A & BIT7);
-                use_cycles(2);
-                break;
-
-            case INSTR_6502_LSR_ZEROPAGE:
-                {
-                    Byte data = get_data_zeropage(memory);
-                    C = (data & BIT7);
-                    data = data >> 1;
-                    Z = (data == 0);
-                    N = (data & BIT7);
-                    set_data_zeropage(memory, data);
-                    IP++;
-                    use_cycles(5);
-                }
-                break;
-
-            case INSTR_6502_LSR_ZEROPAGE_X:
-                {
-                    Byte data = get_data_zeropage(memory, X);
-                    C = (data & BIT7);
-                    data = data >> 1;
-                    Z = (data == 0);
-                    N = (data & BIT7);
-                    set_data_zeropage(memory, data, X);
-                    IP++;
-                    use_cycles(6);
-                }
-                break;
-
-            case INSTR_6502_LSR_ABSOLUTE:
-                {
-                    Byte data = get_data_absolute(memory);
-                    C = (data & BIT7);
-                    data = data >> 1;
-                    Z = (data == 0);
-                    N = (data & BIT7);
-                    set_data_absolute(memory, data);
-                    IP++;
-                    IP++;
-                    use_cycles(6);
-                }
-                break;
-
-            case INSTR_6502_LSR_ABSOLUTE_X:
-                {
-                    Byte data = get_data_absolute(memory, X);
-                    C = (data & BIT7);
-                    data = data >> 1;
-                    Z = (data == 0);
-                    N = (data & BIT7);
-                    set_data_absolute(memory, data, X);
-                    IP++;
-                    IP++;
-                    use_cycles(7);
-                }
-                break;
-
-            case INSTR_6502_ROL_ACCUMULATOR:
-                {
-                    Byte tempC = static_cast<Byte>(C);
-                    C = (A & BIT7);
-                    A = static_cast<Byte>((A << 1) | tempC);
-                    Z = (A == 0);
-                    N = (A & BIT7);
-                    use_cycles(2);
-                }
-                break;
-
-            case INSTR_6502_ROL_ZEROPAGE:
-                {
-                    Byte data = get_data_zeropage(memory);
-                    Byte tempC = static_cast<Byte>(C);
-                    C = (data & BIT7);
-                    data = static_cast<Byte>((data << 1) | tempC);
-                    Z = (data == 0);
-                    N = (data & BIT7);
-                    set_data_zeropage(memory, data);
-                    IP++;
-                    use_cycles(5);
-                }
-                break;
-
-            case INSTR_6502_ROL_ZEROPAGE_X:
-                {
-                    Byte data = get_data_zeropage(memory, X);
-                    Byte tempC = static_cast<Byte>(C);
-                    C = (data & BIT7);
-                    data = static_cast<Byte>((data << 1) | tempC);
-                    Z = (data == 0);
-                    N = (data & BIT7);
-                    set_data_zeropage(memory, data, X);
-                    IP++;
-                    use_cycles(6);
-                }
-                break;
-
-            case INSTR_6502_ROL_ABSOLUTE:
-                {
-                    Byte data = get_data_absolute(memory);
-                    Byte tempC = static_cast<Byte>(C);
-                    C = (data & BIT7);
-                    data = static_cast<Byte>((data << 1) | tempC);
-                    Z = (data == 0);
-                    N = (data & BIT7);
-                    set_data_absolute(memory, data);
-                    IP++;
-                    IP++;
-                    use_cycles(6);
-                }
-                break;
-
-            case INSTR_6502_ROL_ABSOLUTE_X:
-                {
-                    Byte data = get_data_absolute(memory, X);
-                    Byte tempC = static_cast<Byte>(C);
-                    C = (data & BIT7);
-                    data = static_cast<Byte>((data << 1) | tempC);
-                    Z = (data == 0);
-                    N = (data & BIT7);
-                    set_data_absolute(memory, data, X);
-                    IP++;
-                    IP++;
-                    use_cycles(7);
-                }
-                break;
-
-            case INSTR_6502_ROR_ACCUMULATOR:
-                {
-                    Byte tempC = static_cast<Byte>(C) << 7;
-                    C = (A & BIT0);
-                    A = (A >> 1) | tempC;
-                    Z = (A == 0);
-                    N = (A & BIT7);
-                    use_cycles(2);
-                }
-                break;
-
-            case INSTR_6502_ROR_ZEROPAGE:
-                {
-                    Byte data = get_data_zeropage(memory);
-                    Byte tempC = static_cast<Byte>(C) << 7;
-                    C = (data & BIT0);
-                    data = (data >> 1) | tempC;
-                    Z = (data == 0);
-                    N = (data & BIT7);
-                    set_data_zeropage(memory, data);
-                    IP++;
-                    use_cycles(5);
-                }
-                break;
-
-            case INSTR_6502_ROR_ZEROPAGE_X:
-                {
-                    Byte data = get_data_zeropage(memory, X);
-                    Byte tempC = static_cast<Byte>(C) << 7;
-                    C = (data & BIT0);
-                    data = (data >> 1) | tempC;
-                    Z = (data == 0);
-                    N = (data & BIT7);
-                    set_data_zeropage(memory, data, X);
-                    IP++;
-                    use_cycles(6);
-                }
-                break;
-
-            case INSTR_6502_ROR_ABSOLUTE:
-                {
-                    Byte data = get_data_absolute(memory);
-                    Byte tempC = static_cast<Byte>(C) << 7;
-                    C = (data & BIT0);
-                    data = (data >> 1) | tempC;
-                    Z = (data == 0);
-                    N = (data & BIT7);
-                    set_data_absolute(memory, data);
-                    IP++;
-                    IP++;
-                    use_cycles(6);
-                }
-                break;
-
-            case INSTR_6502_ROR_ABSOLUTE_X:
-                {
-                    Byte data = get_data_absolute(memory, X);
-                    Byte tempC = static_cast<Byte>(C) << 7;
-                    C = (data & BIT0);
-                    data = (data >> 1) | tempC;
-                    Z = (data == 0);
-                    N = (data & BIT7);
-                    set_data_absolute(memory, data, X);
-                    IP++;
-                    IP++;
-                    use_cycles(7);
-                }
-                break;
-
-            case INSTR_6502_PLP:
-                {
-                    Byte flags = pop_from_stack(memory);
-                    N = (flags >> 7) & BIT1;
-                    V = (flags >> 6) & BIT1;
-                    B = (flags >> 4) & BIT1;
-                    D = (flags >> 3) & BIT1;
-                    I = (flags >> 2) & BIT1;
-                    Z = (flags >> 1) & BIT1;
-                    C = (flags >> 0) & BIT1;
-                    use_cycles(2);
-                }
-                break;
-
-            case INSTR_6502_SEC:
-                C = true;
-                use_cycles(2);
-                break;
-
-            case INSTR_6502_SEI:
-                I = true;
-                use_cycles(2);
-                break;
-
-            case INSTR_6502_ADC_IMMEDIATE:
-                {
-                    // TODO: Explain this. What I've done is mostly based on
-                    // http://www.righto.com/2012/12/the-6502-overflow-flag-explained.html
-                    Byte data = get_data_immediate(memory);
-                    IP++;
-                    A = add_with_carry(data);
-                    use_cycles(2);
-                }
-                break;
-
-            case INSTR_6502_ADC_ZEROPAGE:
-                {
-                    Byte data = get_data_zeropage(memory);
-                    IP++;
-                    A = add_with_carry(data);
-                    use_cycles(3);
-                }
-                break;
-
-            case INSTR_6502_ADC_ZEROPAGE_X:
-                {
-                    Byte data = get_data_zeropage(memory, X);
-                    IP++;
-                    A = add_with_carry(data);
-                    use_cycles(4);
-                }
-                break;
-
-            case INSTR_6502_ADC_ABSOLUTE:
-                {
-                    Byte data = get_data_absolute(memory);
-                    IP++;
-                    IP++;
-                    A = add_with_carry(data);
-                    use_cycles(4);
-                }
-                break;
-
-            case INSTR_6502_ADC_ABSOLUTE_X:
-                {
-                    Byte data = get_data_absolute(memory, X);
-                    IP++;
-                    IP++;
-                    A = add_with_carry(data);
-                    use_cycles(4);
-                    if (page_crossed)
-                    {
-                        use_cycles(1);
-                    }
-                }
-                break;
-
-            case INSTR_6502_ADC_ABSOLUTE_Y:
-                {
-                    Byte data = get_data_absolute(memory, Y);
-                    IP++;
-                    IP++;
-                    A = add_with_carry(data);
-                    use_cycles(4);
-                    if (page_crossed)
-                    {
-                        use_cycles(1);
-                    }
-                }
-                break;
-
-            case INSTR_6502_ADC_INDIRECT_X:
-                {
-                    Byte data = get_data_indexed_indirect(memory, X);
-                    IP++;
-                    A = add_with_carry(data);
-                    use_cycles(6);
-                }
-                break;
-
-            case INSTR_6502_ADC_INDIRECT_Y:
-                {
-                    Byte data = get_data_indirect_indexed(memory, Y);
-                    IP++;
-                    A = add_with_carry(data);
-                    use_cycles(5);
-                    if (page_crossed)
-                    {
-                        use_cycles(1);
-                    }
-                }
-                break;
-
-            case INSTR_6502_SBC_IMMEDIATE:
-                {
-                    Byte data = get_data_immediate(memory);
-                    IP++;
-                    A = sub_with_carry(data);
-                    use_cycles(2);
-                }
-                break;
-
-            case INSTR_6502_SBC_ZEROPAGE:
-                {
-                    Byte data = get_data_zeropage(memory);
-                    IP++;
-                    A = sub_with_carry(data);
-                    use_cycles(3);
-                }
-                break;
-
-            case INSTR_6502_SBC_ZEROPAGE_X:
-                {
-                    Byte data = get_data_zeropage(memory, X);
-                    IP++;
-                    A = sub_with_carry(data);
-                    use_cycles(4);
-                }
-                break;
-
-            case INSTR_6502_SBC_ABSOLUTE:
-                {
-                    Byte data = get_data_absolute(memory);
-                    IP++;
-                    IP++;
-                    A = sub_with_carry(data);
-                    use_cycles(4);
-                }
-                break;
-
-            case INSTR_6502_SBC_ABSOLUTE_X:
-                {
-                    Byte data = get_data_absolute(memory, X);
-                    IP++;
-                    IP++;
-                    A = sub_with_carry(data);
-                    use_cycles(4);
-                    if (page_crossed)
-                    {
-                        use_cycles(1);
-                    }
-                }
-                break;
-
-            case INSTR_6502_SBC_ABSOLUTE_Y:
-                {
-                    Byte data = get_data_absolute(memory, Y);
-                    IP++;
-                    IP++;
-                    A = sub_with_carry(data);
-                    use_cycles(4);
-                    if (page_crossed)
-                    {
-                        use_cycles(1);
-                    }
-                }
-                break;
-
-            case INSTR_6502_SBC_INDIRECT_X:
-                {
-                    Byte data = get_data_indexed_indirect(memory, X);
-                    IP++;
-                    A = sub_with_carry(data);
-                    use_cycles(6);
-                }
-                break;
-
-            case INSTR_6502_SBC_INDIRECT_Y:
-                {
-                    Byte data = get_data_indirect_indexed(memory, Y);
-                    IP++;
-                    A = sub_with_carry(data);
-                    use_cycles(5);
-                    if (page_crossed)
-                    {
-                        use_cycles(1);
-                    }
-                }
-                break;
-
-            case INSTR_6502_CLD:
-                D = false;
-                use_cycles(2);
-                break;
-
-            case INSTR_6502_CLI:
-                I = false;
-                use_cycles(2);
-                break;
-
-            case INSTR_6502_CLC:
-                C = false;
-                use_cycles(2);
-                break;
-
-            case INSTR_6502_CLV:
-                V = false;
-                use_cycles(2);
-                break;
-
-            case INSTR_6502_PHA:
-                memory[SP] = A;
-                SP--;
-                use_cycles(3);
-                break;
-
-            case INSTR_6502_PHP:
-                memory[SP] = flags_as_byte();
-                SP--;
-                use_cycles(3);
-                break;
-
-            case INSTR_6502_PLA:
-                A = memory[SP];
-                SP++;
-                use_cycles(4);
-                LDA_set_CPU_flags();
-                break;
-
-            case INSTR_6502_NOP:
-                use_cycles(2);
-                break;
-
-            case INSTR_6502_BRK:
-                use_cycles(7);
-                B = true;
-
-                memory[SP] = static_cast<Byte>(IP >> 8);
-                SP--;
-                memory[SP] = static_cast<Byte>(IP & 0xFF);
-                SP--;
-                memory[SP] = flags_as_byte();
-                SP--;
-
-                std::cout << "BRK reached" << std::endl;
-                return BREAK;
-
-            case INSTR_6502_JSR_ABSOLUTE:
-                {
-                    Word target_address = get_word(memory);
-                    IP++;
-                    memory[SP] = static_cast<Byte>(IP >> 8);
-                    SP--;
-                    memory[SP] = static_cast<Byte>(IP & 0xFF);
-                    SP--;
-                    IP = target_address;
-                    use_cycles(6);
-                }
-                break;
-
-            case INSTR_6502_RTS:
-                {
-                    SP++;
-                    Word pointer = get_word(memory, SP);
-                    SP++;
-
-                    IP = pointer + 1;
-
-                    use_cycles(6);
-                }
-                break;
-            
-            case INSTR_6502_JMP_ABSOLUTE:
-                // TODO I don't know if I'm supposed to jump to the address in memory at the IP,
-                // or the address specified by that memory location.
-                IP = get_word(memory);
-                use_cycles(3);
-                break;
-
-            case INSTR_6502_INC_ZEROPAGE:
-                {
-                    Byte value = get_data_zeropage(memory);
-                    value++;
-                    set_data_zeropage(memory, value);
-                    IP++;
-                    INC_set_CPU_flags(value);
-                    use_cycles(5);
-                }
-                break;
-
-            case INSTR_6502_INC_ZEROPAGE_X:
-                {
-                    Byte value = get_data_zeropage(memory, X);
-                    value++;
-                    set_data_zeropage(memory, value, X);
-                    IP++;
-                    INC_set_CPU_flags(value);
-                    use_cycles(6);
-                }
-                break;
-
-            case INSTR_6502_INC_ABSOLUTE:
-                {
-                    Byte value = get_data_absolute(memory);
-                    value++;
-                    set_data_absolute(memory, value);
-                    IP++;
-                    IP++;
-                    INC_set_CPU_flags(value);
-                    use_cycles(6);
-                }
-                break;
-
-            case INSTR_6502_INC_ABSOLUTE_X:
-                {
-                    Byte value = get_data_absolute(memory, X);
-                    value++;
-                    set_data_absolute(memory, value, X);
-                    IP++;
-                    IP++;
-                    INC_set_CPU_flags(value);
-                    use_cycles(7);
-                }
-                break;
-
-            case INSTR_6502_DEC_ZEROPAGE:
-                {
-                    Byte value = get_data_zeropage(memory);
-                    value--;
-                    set_data_zeropage(memory, value);
-                    IP++;
-                    DEC_set_CPU_flags(value);
-                    use_cycles(5);
-                }
-                break;
-
-            case INSTR_6502_DEC_ZEROPAGE_X:
-                {
-                    Byte value = get_data_zeropage(memory, X);
-                    value--;
-                    set_data_zeropage(memory, value, X);
-                    IP++;
-                    DEC_set_CPU_flags(value);
-                    use_cycles(6);
-                }
-                break;
-
-            case INSTR_6502_DEC_ABSOLUTE:
-                {
-                    Byte value = get_data_absolute(memory);
-                    value--;
-                    set_data_absolute(memory, value);
-                    IP++;
-                    IP++;
-                    DEC_set_CPU_flags(value);
-                    use_cycles(6);
-                }
-                break;
-
-            case INSTR_6502_DEC_ABSOLUTE_X:
-                {
-                    Byte value = get_data_absolute(memory, X);
-                    value--;
-                    set_data_absolute(memory, value, X);
-                    IP++;
-                    IP++;
-                    DEC_set_CPU_flags(value);
-                    use_cycles(7);
-                }
-                break;
-
-            case INSTR_6502_JMP_INDIRECT:
-                {
-                    Word lookup_address = get_word(memory);
-                    IP = get_word(memory, lookup_address);
-
-                    use_cycles(5);
-                }
-                break;
-            
-            case INSTR_6502_AND_IMMEDIATE:
-                A &= get_data_immediate(memory);
-                IP++;
-                AND_set_CPU_flags();
-                use_cycles(2);
-                break;
-
-            case INSTR_6502_AND_ZEROPAGE_X:
-                A &= get_data_zeropage(memory, X);
-                IP++;
-                AND_set_CPU_flags();
-                use_cycles(4);
-                break;
-
-            case INSTR_6502_AND_ZEROPAGE:
-                A &= get_data_zeropage(memory);
-                IP++;
-                AND_set_CPU_flags();
-                use_cycles(3);
-                break;
-
-            case INSTR_6502_AND_ABSOLUTE:
-                A &= get_data_absolute(memory);
-                IP++;
-                IP++;
-                AND_set_CPU_flags();
-                use_cycles(4);
-                break;
-            
-            case INSTR_6502_AND_ABSOLUTE_X:
-                A &= get_data_absolute(memory, X);
-                IP++;
-                IP++;
-                AND_set_CPU_flags();
-                use_cycles(4);
-                if (page_crossed) 
-                {
-                    use_cycles(1);
-                }
-                break;
-            
-            case INSTR_6502_AND_ABSOLUTE_Y:
-                A &= get_data_absolute(memory, Y);
-                IP++;
-                IP++;
-                AND_set_CPU_flags();
-                use_cycles(4);
-                if (page_crossed)
-                {
-                    use_cycles(1);
-                }
-                break;
-            
-            case INSTR_6502_AND_INDIRECT_X:
-                A &= get_data_indexed_indirect(memory, X);
-                IP++;
-                AND_set_CPU_flags();
-                use_cycles(6);
-                break;
-            
-            case INSTR_6502_AND_INDIRECT_Y:
-                A &= get_data_indirect_indexed(memory, Y);
-                IP++;
-                AND_set_CPU_flags();
-                use_cycles(5);
-                if (page_crossed)
-                {
-                    use_cycles(1);
-                }
-                break;
-
-            default:
-                std::cout << "Unknown instruction: 0x" << std::hex << std::setw(2) << std::setfill('0');
-                std::cout << (int)instruction << "\n";
-                return BREAK;
+            }
+        }
+        break;
+
+        case INSTR_6502_SED:
+            D = true;
+            use_cycles(2);
+            break;
+
+        case INSTR_6502_ORA_IMMEDIATE:
+            A |= get_data_immediate(memory);
+            m_instruction_pointer++;
+            ORA_set_CPU_flags();
+            use_cycles(2);
+            break;
+
+        case INSTR_6502_ORA_ZEROPAGE:
+            A |= get_data_zeropage(memory);
+            m_instruction_pointer++;
+            ORA_set_CPU_flags();
+            use_cycles(3);
+            break;
+
+        case INSTR_6502_ORA_ZEROPAGE_X:
+            A |= get_data_zeropage(memory, X);
+            m_instruction_pointer++;
+            ORA_set_CPU_flags();
+            use_cycles(4);
+            break;
+
+        case INSTR_6502_ORA_ABSOLUTE:
+            A |= get_data_absolute(memory);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            ORA_set_CPU_flags();
+            use_cycles(4);
+            break;
+
+        case INSTR_6502_ORA_ABSOLUTE_X:
+            A |= get_data_absolute(memory, X);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            ORA_set_CPU_flags();
+            use_cycles(4);
+            if (page_crossed)
+            {
+                use_cycles(1);
+            }
+            break;
+
+        case INSTR_6502_ORA_ABSOLUTE_Y:
+            A |= get_data_absolute(memory, Y);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            ORA_set_CPU_flags();
+            use_cycles(4);
+            if (page_crossed)
+            {
+                use_cycles(1);
+            }
+            break;
+
+        case INSTR_6502_ORA_INDIRECT_X:
+            A |= get_data_indexed_indirect(memory, X);
+            m_instruction_pointer++;
+            ORA_set_CPU_flags();
+            use_cycles(6);
+            break;
+
+        case INSTR_6502_ORA_INDIRECT_Y:
+            A |= get_data_indirect_indexed(memory, Y);
+            m_instruction_pointer++;
+            ORA_set_CPU_flags();
+            use_cycles(5);
+            if (page_crossed)
+            {
+                use_cycles(1);
+            }
+            break;
+
+        case INSTR_6502_BIT_ZEROPAGE:
+        {
+            Byte result = A & get_data_zeropage(memory);
+            m_instruction_pointer++;
+            Z = (result == 0);
+            V = (result & BIT6);
+            N = (result & BIT7);
+            use_cycles(3);
+        }
+        break;
+
+        case INSTR_6502_BIT_ABSOLUTE:
+        {
+            Byte result = A & get_data_absolute(memory);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            Z = (result == 0);
+            V = (result & BIT6);
+            N = (result & BIT7);
+            use_cycles(4);
+        }
+        break;
+
+        case INSTR_6502_ASL_ACCUMULATOR:
+            C = (A & BIT7);
+            A = A << 1;
+            Z = (A == 0);
+            N = (A & BIT7);
+            use_cycles(2);
+            break;
+
+        case INSTR_6502_ASL_ZEROPAGE:
+        {
+            Byte data = get_data_zeropage(memory);
+            C = (data & BIT7);
+            data = data << 1;
+            Z = (data == 0);
+            N = (data & BIT7);
+            set_data_zeropage(memory, data);
+            m_instruction_pointer++;
+            use_cycles(5);
+        }
+        break;
+
+        case INSTR_6502_ASL_ZEROPAGE_X:
+        {
+            Byte data = get_data_zeropage(memory, X);
+            C = (data & BIT7);
+            data = data << 1;
+            Z = (data == 0);
+            N = (data & BIT7);
+            set_data_zeropage(memory, data, X);
+            m_instruction_pointer++;
+            use_cycles(6);
+        }
+        break;
+
+        case INSTR_6502_ASL_ABSOLUTE:
+        {
+            Byte data = get_data_absolute(memory);
+            C = (data & BIT7);
+            data = data << 1;
+            Z = (data == 0);
+            N = (data & BIT7);
+            set_data_absolute(memory, data);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            use_cycles(6);
+        }
+        break;
+
+        case INSTR_6502_ASL_ABSOLUTE_X:
+        {
+            Byte data = get_data_absolute(memory, X);
+            C = (data & BIT7);
+            data = data << 1;
+            Z = (data == 0);
+            N = (data & BIT7);
+            set_data_absolute(memory, data, X);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            use_cycles(7);
+        }
+        break;
+
+        case INSTR_6502_LSR_ACCUMULATOR:
+            C = (A & BIT7);
+            A = A >> 1;
+            Z = (A == 0);
+            N = (A & BIT7);
+            use_cycles(2);
+            break;
+
+        case INSTR_6502_LSR_ZEROPAGE:
+        {
+            Byte data = get_data_zeropage(memory);
+            C = (data & BIT7);
+            data = data >> 1;
+            Z = (data == 0);
+            N = (data & BIT7);
+            set_data_zeropage(memory, data);
+            m_instruction_pointer++;
+            use_cycles(5);
+        }
+        break;
+
+        case INSTR_6502_LSR_ZEROPAGE_X:
+        {
+            Byte data = get_data_zeropage(memory, X);
+            C = (data & BIT7);
+            data = data >> 1;
+            Z = (data == 0);
+            N = (data & BIT7);
+            set_data_zeropage(memory, data, X);
+            m_instruction_pointer++;
+            use_cycles(6);
+        }
+        break;
+
+        case INSTR_6502_LSR_ABSOLUTE:
+        {
+            Byte data = get_data_absolute(memory);
+            C = (data & BIT7);
+            data = data >> 1;
+            Z = (data == 0);
+            N = (data & BIT7);
+            set_data_absolute(memory, data);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            use_cycles(6);
+        }
+        break;
+
+        case INSTR_6502_LSR_ABSOLUTE_X:
+        {
+            Byte data = get_data_absolute(memory, X);
+            C = (data & BIT7);
+            data = data >> 1;
+            Z = (data == 0);
+            N = (data & BIT7);
+            set_data_absolute(memory, data, X);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            use_cycles(7);
+        }
+        break;
+
+        case INSTR_6502_ROL_ACCUMULATOR:
+        {
+            Byte tempC = static_cast<Byte>(C);
+            C = (A & BIT7);
+            A = static_cast<Byte>((A << 1) | tempC);
+            Z = (A == 0);
+            N = (A & BIT7);
+            use_cycles(2);
+        }
+        break;
+
+        case INSTR_6502_ROL_ZEROPAGE:
+        {
+            Byte data = get_data_zeropage(memory);
+            Byte tempC = static_cast<Byte>(C);
+            C = (data & BIT7);
+            data = static_cast<Byte>((data << 1) | tempC);
+            Z = (data == 0);
+            N = (data & BIT7);
+            set_data_zeropage(memory, data);
+            m_instruction_pointer++;
+            use_cycles(5);
+        }
+        break;
+
+        case INSTR_6502_ROL_ZEROPAGE_X:
+        {
+            Byte data = get_data_zeropage(memory, X);
+            Byte tempC = static_cast<Byte>(C);
+            C = (data & BIT7);
+            data = static_cast<Byte>((data << 1) | tempC);
+            Z = (data == 0);
+            N = (data & BIT7);
+            set_data_zeropage(memory, data, X);
+            m_instruction_pointer++;
+            use_cycles(6);
+        }
+        break;
+
+        case INSTR_6502_ROL_ABSOLUTE:
+        {
+            Byte data = get_data_absolute(memory);
+            Byte tempC = static_cast<Byte>(C);
+            C = (data & BIT7);
+            data = static_cast<Byte>((data << 1) | tempC);
+            Z = (data == 0);
+            N = (data & BIT7);
+            set_data_absolute(memory, data);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            use_cycles(6);
+        }
+        break;
+
+        case INSTR_6502_ROL_ABSOLUTE_X:
+        {
+            Byte data = get_data_absolute(memory, X);
+            Byte tempC = static_cast<Byte>(C);
+            C = (data & BIT7);
+            data = static_cast<Byte>((data << 1) | tempC);
+            Z = (data == 0);
+            N = (data & BIT7);
+            set_data_absolute(memory, data, X);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            use_cycles(7);
+        }
+        break;
+
+        case INSTR_6502_ROR_ACCUMULATOR:
+        {
+            Byte tempC = static_cast<Byte>(C) << 7;
+            C = (A & BIT0);
+            A = (A >> 1) | tempC;
+            Z = (A == 0);
+            N = (A & BIT7);
+            use_cycles(2);
+        }
+        break;
+
+        case INSTR_6502_ROR_ZEROPAGE:
+        {
+            Byte data = get_data_zeropage(memory);
+            Byte tempC = static_cast<Byte>(C) << 7;
+            C = (data & BIT0);
+            data = (data >> 1) | tempC;
+            Z = (data == 0);
+            N = (data & BIT7);
+            set_data_zeropage(memory, data);
+            m_instruction_pointer++;
+            use_cycles(5);
+        }
+        break;
+
+        case INSTR_6502_ROR_ZEROPAGE_X:
+        {
+            Byte data = get_data_zeropage(memory, X);
+            Byte tempC = static_cast<Byte>(C) << 7;
+            C = (data & BIT0);
+            data = (data >> 1) | tempC;
+            Z = (data == 0);
+            N = (data & BIT7);
+            set_data_zeropage(memory, data, X);
+            m_instruction_pointer++;
+            use_cycles(6);
+        }
+        break;
+
+        case INSTR_6502_ROR_ABSOLUTE:
+        {
+            Byte data = get_data_absolute(memory);
+            Byte tempC = static_cast<Byte>(C) << 7;
+            C = (data & BIT0);
+            data = (data >> 1) | tempC;
+            Z = (data == 0);
+            N = (data & BIT7);
+            set_data_absolute(memory, data);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            use_cycles(6);
+        }
+        break;
+
+        case INSTR_6502_ROR_ABSOLUTE_X:
+        {
+            Byte data = get_data_absolute(memory, X);
+            Byte tempC = static_cast<Byte>(C) << 7;
+            C = (data & BIT0);
+            data = (data >> 1) | tempC;
+            Z = (data == 0);
+            N = (data & BIT7);
+            set_data_absolute(memory, data, X);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            use_cycles(7);
+        }
+        break;
+
+        case INSTR_6502_PLP:
+        {
+            Byte flags = pop_from_stack(memory);
+            N = (flags >> 7) & BIT1;
+            V = (flags >> 6) & BIT1;
+            B = (flags >> 4) & BIT1;
+            D = (flags >> 3) & BIT1;
+            I = (flags >> 2) & BIT1;
+            Z = (flags >> 1) & BIT1;
+            C = (flags >> 0) & BIT1;
+            use_cycles(2);
+        }
+        break;
+
+        case INSTR_6502_SEC:
+            C = true;
+            use_cycles(2);
+            break;
+
+        case INSTR_6502_SEI:
+            I = true;
+            use_cycles(2);
+            break;
+
+        case INSTR_6502_ADC_IMMEDIATE:
+        {
+            // TODO: Explain this. What I've done is mostly based on
+            // http://www.righto.com/2012/12/the-6502-overflow-flag-explained.html
+            Byte data = get_data_immediate(memory);
+            m_instruction_pointer++;
+            A = add_with_carry(data);
+            use_cycles(2);
+        }
+        break;
+
+        case INSTR_6502_ADC_ZEROPAGE:
+        {
+            Byte data = get_data_zeropage(memory);
+            m_instruction_pointer++;
+            A = add_with_carry(data);
+            use_cycles(3);
+        }
+        break;
+
+        case INSTR_6502_ADC_ZEROPAGE_X:
+        {
+            Byte data = get_data_zeropage(memory, X);
+            m_instruction_pointer++;
+            A = add_with_carry(data);
+            use_cycles(4);
+        }
+        break;
+
+        case INSTR_6502_ADC_ABSOLUTE:
+        {
+            Byte data = get_data_absolute(memory);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            A = add_with_carry(data);
+            use_cycles(4);
+        }
+        break;
+
+        case INSTR_6502_ADC_ABSOLUTE_X:
+        {
+            Byte data = get_data_absolute(memory, X);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            A = add_with_carry(data);
+            use_cycles(4);
+            if (page_crossed)
+            {
+                use_cycles(1);
+            }
+        }
+        break;
+
+        case INSTR_6502_ADC_ABSOLUTE_Y:
+        {
+            Byte data = get_data_absolute(memory, Y);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            A = add_with_carry(data);
+            use_cycles(4);
+            if (page_crossed)
+            {
+                use_cycles(1);
+            }
+        }
+        break;
+
+        case INSTR_6502_ADC_INDIRECT_X:
+        {
+            Byte data = get_data_indexed_indirect(memory, X);
+            m_instruction_pointer++;
+            A = add_with_carry(data);
+            use_cycles(6);
+        }
+        break;
+
+        case INSTR_6502_ADC_INDIRECT_Y:
+        {
+            Byte data = get_data_indirect_indexed(memory, Y);
+            m_instruction_pointer++;
+            A = add_with_carry(data);
+            use_cycles(5);
+            if (page_crossed)
+            {
+                use_cycles(1);
+            }
+        }
+        break;
+
+        case INSTR_6502_SBC_IMMEDIATE:
+        {
+            Byte data = get_data_immediate(memory);
+            m_instruction_pointer++;
+            A = sub_with_carry(data);
+            use_cycles(2);
+        }
+        break;
+
+        case INSTR_6502_SBC_ZEROPAGE:
+        {
+            Byte data = get_data_zeropage(memory);
+            m_instruction_pointer++;
+            A = sub_with_carry(data);
+            use_cycles(3);
+        }
+        break;
+
+        case INSTR_6502_SBC_ZEROPAGE_X:
+        {
+            Byte data = get_data_zeropage(memory, X);
+            m_instruction_pointer++;
+            A = sub_with_carry(data);
+            use_cycles(4);
+        }
+        break;
+
+        case INSTR_6502_SBC_ABSOLUTE:
+        {
+            Byte data = get_data_absolute(memory);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            A = sub_with_carry(data);
+            use_cycles(4);
+        }
+        break;
+
+        case INSTR_6502_SBC_ABSOLUTE_X:
+        {
+            Byte data = get_data_absolute(memory, X);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            A = sub_with_carry(data);
+            use_cycles(4);
+            if (page_crossed)
+            {
+                use_cycles(1);
+            }
+        }
+        break;
+
+        case INSTR_6502_SBC_ABSOLUTE_Y:
+        {
+            Byte data = get_data_absolute(memory, Y);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            A = sub_with_carry(data);
+            use_cycles(4);
+            if (page_crossed)
+            {
+                use_cycles(1);
+            }
+        }
+        break;
+
+        case INSTR_6502_SBC_INDIRECT_X:
+        {
+            Byte data = get_data_indexed_indirect(memory, X);
+            m_instruction_pointer++;
+            A = sub_with_carry(data);
+            use_cycles(6);
+        }
+        break;
+
+        case INSTR_6502_SBC_INDIRECT_Y:
+        {
+            Byte data = get_data_indirect_indexed(memory, Y);
+            m_instruction_pointer++;
+            A = sub_with_carry(data);
+            use_cycles(5);
+            if (page_crossed)
+            {
+                use_cycles(1);
+            }
+        }
+        break;
+
+        case INSTR_6502_CLD:
+            D = false;
+            use_cycles(2);
+            break;
+
+        case INSTR_6502_CLI:
+            I = false;
+            use_cycles(2);
+            break;
+
+        case INSTR_6502_CLC:
+            C = false;
+            use_cycles(2);
+            break;
+
+        case INSTR_6502_CLV:
+            V = false;
+            use_cycles(2);
+            break;
+
+        case INSTR_6502_PHA:
+            memory[m_stack_pointer] = A;
+            m_stack_pointer--;
+            use_cycles(3);
+            break;
+
+        case INSTR_6502_PHP:
+            memory[m_stack_pointer] = flags_as_byte();
+            m_stack_pointer--;
+            use_cycles(3);
+            break;
+
+        case INSTR_6502_PLA:
+            A = memory[m_stack_pointer];
+            m_stack_pointer++;
+            use_cycles(4);
+            LDA_set_CPU_flags();
+            break;
+
+        case INSTR_6502_NOP:
+            use_cycles(2);
+            break;
+
+        case INSTR_6502_BRK:
+            use_cycles(7);
+            B = true;
+
+            memory[m_stack_pointer] = static_cast<Byte>(m_instruction_pointer >> 8);
+            m_stack_pointer--;
+            memory[m_stack_pointer] = static_cast<Byte>(m_instruction_pointer & 0xFF);
+            m_stack_pointer--;
+            memory[m_stack_pointer] = flags_as_byte();
+            m_stack_pointer--;
+
+            std::cout << "BRK reached" << std::endl;
+            return ReturnCode::BREAK;
+
+        case INSTR_6502_JSR_ABSOLUTE:
+        {
+            Word target_address = get_word(memory);
+            m_instruction_pointer++;
+            memory[m_stack_pointer] = static_cast<Byte>(m_instruction_pointer >> 8);
+            m_stack_pointer--;
+            memory[m_stack_pointer] = static_cast<Byte>(m_instruction_pointer & 0xFF);
+            m_stack_pointer--;
+            m_instruction_pointer = target_address;
+            use_cycles(6);
+        }
+        break;
+
+        case INSTR_6502_RTS:
+        {
+            m_stack_pointer++;
+            Word pointer = get_word(memory, m_stack_pointer);
+            m_stack_pointer++;
+
+            m_instruction_pointer = pointer + 1;
+
+            use_cycles(6);
+        }
+        break;
+
+        case INSTR_6502_JMP_ABSOLUTE:
+            // TODO I don't know if I'm supposed to jump to the address in memory at the IP,
+            // or the address specified by that memory location.
+            m_instruction_pointer = get_word(memory);
+            use_cycles(3);
+            break;
+
+        case INSTR_6502_INC_ZEROPAGE:
+        {
+            Byte value = get_data_zeropage(memory);
+            value++;
+            set_data_zeropage(memory, value);
+            m_instruction_pointer++;
+            INC_set_CPU_flags(value);
+            use_cycles(5);
+        }
+        break;
+
+        case INSTR_6502_INC_ZEROPAGE_X:
+        {
+            Byte value = get_data_zeropage(memory, X);
+            value++;
+            set_data_zeropage(memory, value, X);
+            m_instruction_pointer++;
+            INC_set_CPU_flags(value);
+            use_cycles(6);
+        }
+        break;
+
+        case INSTR_6502_INC_ABSOLUTE:
+        {
+            Byte value = get_data_absolute(memory);
+            value++;
+            set_data_absolute(memory, value);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            INC_set_CPU_flags(value);
+            use_cycles(6);
+        }
+        break;
+
+        case INSTR_6502_INC_ABSOLUTE_X:
+        {
+            Byte value = get_data_absolute(memory, X);
+            value++;
+            set_data_absolute(memory, value, X);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            INC_set_CPU_flags(value);
+            use_cycles(7);
+        }
+        break;
+
+        case INSTR_6502_DEC_ZEROPAGE:
+        {
+            Byte value = get_data_zeropage(memory);
+            value--;
+            set_data_zeropage(memory, value);
+            m_instruction_pointer++;
+            DEC_set_CPU_flags(value);
+            use_cycles(5);
+        }
+        break;
+
+        case INSTR_6502_DEC_ZEROPAGE_X:
+        {
+            Byte value = get_data_zeropage(memory, X);
+            value--;
+            set_data_zeropage(memory, value, X);
+            m_instruction_pointer++;
+            DEC_set_CPU_flags(value);
+            use_cycles(6);
+        }
+        break;
+
+        case INSTR_6502_DEC_ABSOLUTE:
+        {
+            Byte value = get_data_absolute(memory);
+            value--;
+            set_data_absolute(memory, value);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            DEC_set_CPU_flags(value);
+            use_cycles(6);
+        }
+        break;
+
+        case INSTR_6502_DEC_ABSOLUTE_X:
+        {
+            Byte value = get_data_absolute(memory, X);
+            value--;
+            set_data_absolute(memory, value, X);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            DEC_set_CPU_flags(value);
+            use_cycles(7);
+        }
+        break;
+
+        case INSTR_6502_JMP_INDIRECT:
+        {
+            Word lookup_address = get_word(memory);
+            m_instruction_pointer = get_word(memory, lookup_address);
+
+            use_cycles(5);
+        }
+        break;
+
+        case INSTR_6502_AND_IMMEDIATE:
+            A &= get_data_immediate(memory);
+            m_instruction_pointer++;
+            AND_set_CPU_flags();
+            use_cycles(2);
+            break;
+
+        case INSTR_6502_AND_ZEROPAGE_X:
+            A &= get_data_zeropage(memory, X);
+            m_instruction_pointer++;
+            AND_set_CPU_flags();
+            use_cycles(4);
+            break;
+
+        case INSTR_6502_AND_ZEROPAGE:
+            A &= get_data_zeropage(memory);
+            m_instruction_pointer++;
+            AND_set_CPU_flags();
+            use_cycles(3);
+            break;
+
+        case INSTR_6502_AND_ABSOLUTE:
+            A &= get_data_absolute(memory);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            AND_set_CPU_flags();
+            use_cycles(4);
+            break;
+
+        case INSTR_6502_AND_ABSOLUTE_X:
+            A &= get_data_absolute(memory, X);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            AND_set_CPU_flags();
+            use_cycles(4);
+            if (page_crossed)
+            {
+                use_cycles(1);
+            }
+            break;
+
+        case INSTR_6502_AND_ABSOLUTE_Y:
+            A &= get_data_absolute(memory, Y);
+            m_instruction_pointer++;
+            m_instruction_pointer++;
+            AND_set_CPU_flags();
+            use_cycles(4);
+            if (page_crossed)
+            {
+                use_cycles(1);
+            }
+            break;
+
+        case INSTR_6502_AND_INDIRECT_X:
+            A &= get_data_indexed_indirect(memory, X);
+            m_instruction_pointer++;
+            AND_set_CPU_flags();
+            use_cycles(6);
+            break;
+
+        case INSTR_6502_AND_INDIRECT_Y:
+            A &= get_data_indirect_indexed(memory, Y);
+            m_instruction_pointer++;
+            AND_set_CPU_flags();
+            use_cycles(5);
+            if (page_crossed)
+            {
+                use_cycles(1);
+            }
+            break;
+
+        default:
+            std::cout << "Unknown instruction: 0x" << std::hex << std::setw(2) << std::setfill('0');
+            std::cout << (int)instruction << "\n";
+            return ReturnCode::BREAK;
         }
     }
-    return CONTINUE;
+    return ReturnCode::CONTINUE;
 }
 
 /** \brief Sets the value of a byte in memory, addressed by a full word.
@@ -1587,7 +1587,7 @@ int CPU::run(Memory& memory, const int cycles)
  * \param address The 16-bit address of the memory location to write to.
  * \param value The 8-bit value to write into memory.
  */
-void CPU::set_byte(Memory& memory, const Word address, Byte const value)
+void Cpu6502::set_byte(Memory &memory, const Word address, Byte const value)
 {
     memory[address] = value;
 }
@@ -1596,9 +1596,9 @@ void CPU::set_byte(Memory& memory, const Word address, Byte const value)
  * \param memory Reference to system memory.
  * \return A byte from memory.
  */
-Byte CPU::get_byte(Memory& memory) const
+Byte Cpu6502::get_byte(Memory &memory) const
 {
-    return memory[IP];
+    return memory[m_instruction_pointer];
 }
 
 /** \brief Gets a byte from the zero page in memory, from a specified 8-bit address.
@@ -1606,7 +1606,7 @@ Byte CPU::get_byte(Memory& memory) const
  * \param address The address in the zero page from which to fetch data.
  * \return 8-bit value from specified memory location.
  */
-Byte CPU::get_byte(Memory& memory, const Byte address) const
+Byte Cpu6502::get_byte(Memory &memory, const Byte address) const
 {
     return memory[address];
 }
@@ -1616,7 +1616,7 @@ Byte CPU::get_byte(Memory& memory, const Byte address) const
  * \param address A full 16-bit address from which to getch data.
  * \return 8-bit value from memory.
  */
-Byte CPU::get_byte(Memory& memory, const Word address) const
+Byte Cpu6502::get_byte(Memory &memory, const Word address) const
 {
     return memory[address];
 }
@@ -1625,10 +1625,10 @@ Byte CPU::get_byte(Memory& memory, const Word address) const
  * \param memory Reference to system memory.
  * \return 16-bit value from memory.
  */
-Word CPU::get_word(Memory& memory) const
+Word Cpu6502::get_word(Memory &memory) const
 {
-    Word val1 = static_cast<Word>(memory[IP]);
-    Word val2 = static_cast<Word>(memory[IP+1]);
+    Word val1 = static_cast<Word>(memory[m_instruction_pointer]);
+    Word val2 = static_cast<Word>(memory[m_instruction_pointer + 1]);
     return static_cast<Word>(val2 << 8) | val1;
 }
 
@@ -1637,10 +1637,10 @@ Word CPU::get_word(Memory& memory) const
  * \param address 8-bit address in memory, from which to fetch data.
  * \return 16-bit value from specified memory location.
  */
-Word CPU::get_word(Memory& memory, const Byte address) const
+Word Cpu6502::get_word(Memory &memory, const Byte address) const
 {
     Word val1 = static_cast<Word>(memory[address]);
-    Word val2 = static_cast<Word>(memory[address+1]);
+    Word val2 = static_cast<Word>(memory[address + 1]);
     return static_cast<Word>(val2 << 8) | val1;
 }
 
@@ -1649,10 +1649,10 @@ Word CPU::get_word(Memory& memory, const Byte address) const
  * \param address 16-bit address from which to fetch data.
  * \return 16-bit value from memory.
  */
-Word CPU::get_word(Memory& memory, const Word address) const
+Word Cpu6502::get_word(Memory &memory, const Word address) const
 {
     Word val1 = static_cast<Word>(memory[address]);
-    Word val2 = static_cast<Word>(memory[address+1]);
+    Word val2 = static_cast<Word>(memory[address + 1]);
     return static_cast<Word>(val2 << 8) | val1;
 }
 
@@ -1660,11 +1660,11 @@ Word CPU::get_word(Memory& memory, const Word address) const
  * \param memory Reference to system memory.
  * \return 8-bit value from memory.
  */
-Byte CPU::get_data_absolute(Memory& memory) const
+Byte Cpu6502::get_data_absolute(Memory &memory) const
 {
-    //get address from next two bytes and add index
+    // get address from next two bytes and add index
     Word address = get_word(memory);
-    //return data at address
+    // return data at address
     return get_byte(memory, address);
 }
 
@@ -1672,7 +1672,7 @@ Byte CPU::get_data_absolute(Memory& memory) const
  * \param memory Reference to system memory.
  * \param data A byte of data to store in the 16-bit address at the current instruction pointer.
  */
-void CPU::set_data_absolute(Memory& memory, const Byte data)
+void Cpu6502::set_data_absolute(Memory &memory, const Byte data)
 {
     Word address = get_word(memory);
     memory[address] = data;
@@ -1683,7 +1683,7 @@ void CPU::set_data_absolute(Memory& memory, const Byte data)
  * \param data A byte of data to store in the 16-bit address at the current instruction pointer.
  * \param index An offset from the specified memory location.
  */
-void CPU::set_data_absolute(Memory& memory, Byte data, Byte index)
+void Cpu6502::set_data_absolute(Memory &memory, Byte data, Byte index)
 {
     Word address = get_word(memory) + index;
     memory[address] = data;
@@ -1693,7 +1693,7 @@ void CPU::set_data_absolute(Memory& memory, Byte data, Byte index)
  * \param memory Reference to system memory.
  * \param data A byte of data to store in the 8-bit (zero page) address at the current instruction pointer.
  */
-void CPU::set_data_zeropage(Memory& memory, Byte data)
+void Cpu6502::set_data_zeropage(Memory &memory, Byte data)
 {
     Byte data_address = get_byte(memory);
     memory[data_address] = data;
@@ -1704,7 +1704,7 @@ void CPU::set_data_zeropage(Memory& memory, Byte data)
  * \param data A byte of data to store in the 8-bit (zero page) address at the current instruction pointer.
  * \param index Offset from the memory location read by the instruction pointer.
  */
-void CPU::set_data_zeropage(Memory& memory, Byte data, Byte index)
+void Cpu6502::set_data_zeropage(Memory &memory, Byte data, Byte index)
 {
     Byte data_address = get_byte(memory) + index;
     memory[data_address] = data;
@@ -1716,21 +1716,21 @@ void CPU::set_data_zeropage(Memory& memory, Byte data, Byte index)
  * \param index A byte to add to the address to be read from.
  * \return 8-bit value from memory.
  */
-Byte CPU::get_data_absolute(Memory& memory, const Byte index)
+Byte Cpu6502::get_data_absolute(Memory &memory, const Byte index)
 {
-    //get address from next two bytes and add index
+    // get address from next two bytes and add index
     Word address = get_word(memory);
     Byte page1 = static_cast<Byte>(address >> 8);
     address += index;
     Byte page2 = static_cast<Byte>(address >> 8);
-    
+
     // Check for page crossing for extra cycle.
     if (page1 != page2)
     {
         this->page_crossed = true;
     }
-    
-    //return data at address
+
+    // return data at address
     return get_byte(memory, address);
 }
 
@@ -1738,7 +1738,7 @@ Byte CPU::get_data_absolute(Memory& memory, const Byte index)
  * \param data A byte of data to be subtracted from the accumulator.
  * \return A byte to be stored in the accumulator.
  */
-Byte CPU::sub_with_carry(const Byte data)
+Byte Cpu6502::sub_with_carry(const Byte data)
 {
     return add_with_carry(~data);
 }
@@ -1747,7 +1747,7 @@ Byte CPU::sub_with_carry(const Byte data)
  * \param data A byte of data to be added to the accumulator.
  * \return A byte to be stored in the accumulator.
  */
-Byte CPU::add_with_carry(const Byte data)
+Byte Cpu6502::add_with_carry(const Byte data)
 {
     // TODO Not at all confident in this implementation, esp. V = ...
     // http://www.righto.com/2012/12/the-6502-overflow-flag-explained.html
@@ -1763,7 +1763,7 @@ Byte CPU::add_with_carry(const Byte data)
  * \param memory A reference to a memory array object.
  * \return A Byte from memory.
  */
-Byte CPU::get_data_relative(Memory& memory) const
+Byte Cpu6502::get_data_relative(Memory &memory) const
 {
     return get_data_immediate(memory);
 }
@@ -1772,7 +1772,7 @@ Byte CPU::get_data_relative(Memory& memory) const
  * \param memory A reference to a memory array object.
  * \return A Byte from memory.
  */
-Byte CPU::get_data_immediate(Memory& memory) const
+Byte Cpu6502::get_data_immediate(Memory &memory) const
 {
     return get_byte(memory);
 }
@@ -1781,7 +1781,7 @@ Byte CPU::get_data_immediate(Memory& memory) const
  * \param memory A reference to a memory array object.
  * \return A Byte from memory.
  */
-Byte CPU::get_data_zeropage(Memory& memory) const
+Byte Cpu6502::get_data_zeropage(Memory &memory) const
 {
     Byte data_address = get_byte(memory);
     return get_byte(memory, data_address);
@@ -1792,7 +1792,7 @@ Byte CPU::get_data_zeropage(Memory& memory) const
  * \param index An index into a memory region.
  * \return A Byte from memory.
  */
-Byte CPU::get_data_zeropage(Memory& memory, const Byte index) const
+Byte Cpu6502::get_data_zeropage(Memory &memory, const Byte index) const
 {
     Byte data_address = get_byte(memory) + index;
     return get_byte(memory, data_address);
@@ -1802,14 +1802,14 @@ Byte CPU::get_data_zeropage(Memory& memory, const Byte index) const
  * \param memory Reference to system memory.
  * \param address The zero page address of the first byte to be read.
  * \return 16-bit value from the zero page.
- * 
+ *
  * This function gets a word from the zero page in memory. Importantly, the FULL word is guaranteed to come from the
  * zero page. If the low byte is at the end of the zero page, the high byte will come from the start of the zero page.
  */
-Word CPU::get_word_zpg_wrap(Memory& memory, const Byte address) const
+Word Cpu6502::get_word_zpg_wrap(Memory &memory, const Byte address) const
 {
     Word val1 = static_cast<Word>(memory[address % 256]);
-    Word val2 = static_cast<Word>(memory[(address+1) % 256]);
+    Word val2 = static_cast<Word>(memory[(address + 1) % 256]);
     return static_cast<Word>(val2 << 8) | val1;
 }
 
@@ -1818,12 +1818,12 @@ Word CPU::get_word_zpg_wrap(Memory& memory, const Byte address) const
  * \param index Index added to address.
  * \return 8-bit value from memory.
  */
-Byte CPU::get_data_indexed_indirect(Memory& memory, const Byte index) const
+Byte Cpu6502::get_data_indexed_indirect(Memory &memory, const Byte index) const
 {
     // read next byte and add index without carry
     Byte indirect_address = get_byte(memory) + index;
 
-    //get target address from indirect_address data and next on zero page
+    // get target address from indirect_address data and next on zero page
     Word target_address = get_word_zpg_wrap(memory, indirect_address);
 
     // get data from target address and return
@@ -1835,7 +1835,7 @@ Byte CPU::get_data_indexed_indirect(Memory& memory, const Byte index) const
  * \param data Byte of data to store in memory.
  * \param index Offset of memory location.
  */
-void CPU::set_data_indexed_indirect(Memory& memory, Byte data, Byte index)
+void Cpu6502::set_data_indexed_indirect(Memory &memory, Byte data, Byte index)
 {
     Byte indirect_address = get_byte(memory) + index;
     Word target_address = get_word_zpg_wrap(memory, indirect_address);
@@ -1848,12 +1848,12 @@ void CPU::set_data_indexed_indirect(Memory& memory, Byte data, Byte index)
  * \param index Index to add to address.
  * \return 8-bit value from memory.
  */
-Byte CPU::get_data_indirect_indexed(Memory& memory, const Byte index)
+Byte Cpu6502::get_data_indirect_indexed(Memory &memory, const Byte index)
 {
-    //read next byte and add index without carry
+    // read next byte and add index without carry
     Byte indirect_address = get_byte(memory);
 
-    //get target address from indirect_address data and next on zero page and add index
+    // get target address from indirect_address data and next on zero page and add index
     Word target_address = get_word_zpg_wrap(memory, indirect_address);
     Byte page1 = static_cast<Byte>(target_address >> 8);
     target_address += index;
@@ -1865,7 +1865,7 @@ Byte CPU::get_data_indirect_indexed(Memory& memory, const Byte index)
         page_crossed = true;
     }
 
-    //get data from target address and return
+    // get data from target address and return
     return get_byte(memory, target_address);
 }
 
@@ -1874,7 +1874,7 @@ Byte CPU::get_data_indirect_indexed(Memory& memory, const Byte index)
  * \param data A byte of data to store in memory.
  * \param index Memory location offset.
  */
-void CPU::set_data_indirect_indexed(Memory& memory, const Byte data, const Byte index)
+void Cpu6502::set_data_indirect_indexed(Memory &memory, const Byte data, const Byte index)
 {
     Byte indirect_address = get_byte(memory);
     Word target_address = get_word_zpg_wrap(memory, indirect_address) + index;
@@ -1884,19 +1884,19 @@ void CPU::set_data_indirect_indexed(Memory& memory, const Byte data, const Byte 
 /** \brief Adds the signed value distance to the IP.
  * \param distance Signed value defining the distance to jump in memory.
  */
-void CPU::branch_relative(Byte distance)
+void Cpu6502::branch_relative(Byte distance)
 {
     if (distance & BIT7)
     {
         // If jump is negative get the two's complement and subtract the result.
         distance = ~distance;
         distance += 1;
-        IP = IP - distance;
+        m_instruction_pointer = m_instruction_pointer - distance;
     }
     else
     {
         // If the jump is positive, do the jump.
-        IP = IP + distance;
+        m_instruction_pointer = m_instruction_pointer + distance;
     }
 }
 
@@ -1904,33 +1904,25 @@ void CPU::branch_relative(Byte distance)
  * \param memory Reference to system memory.
  * \return A byte from the stack.
  */
-Byte CPU::pop_from_stack(Memory& memory)
+Byte Cpu6502::pop_from_stack(Memory &memory)
 {
-    SP++;
-    return memory[SP];
+    m_stack_pointer++;
+    return memory[m_stack_pointer];
 }
 
 /** \brief Encode all CPU flags into a single byte.
  * \return 8-bit value containing all CPU flags.
  */
-Byte CPU::flags_as_byte() const
+Byte Cpu6502::flags_as_byte() const
 {
     return static_cast<Byte>(
-          (N << 7) 
-        | (V << 6) 
-        | (true << 5) 
-        | (B << 4) 
-        | (D << 3) 
-        | (I << 2) 
-        | (Z << 1) 
-        | (C << 0)
-    );
+        (N << 7) | (V << 6) | (true << 5) | (B << 4) | (D << 3) | (I << 2) | (Z << 1) | (C << 0));
 }
 
 /** \brief Increases the number of available CPU cycles.
  * \param cycles_to_add How much to increase the count of available cycles.
  */
-void CPU::add_cycles(int cycles_to_add)
+void Cpu6502::add_cycles(const int cycles_to_add)
 {
     cycles_available += cycles_to_add;
 }
@@ -1938,7 +1930,7 @@ void CPU::add_cycles(int cycles_to_add)
 /** \brief Reduce the number of available CPU cycles.
  * \param cycles_to_use How much to reduce the count of available cycles.
  */
-void CPU::use_cycles(int cycles_to_use)
+void Cpu6502::use_cycles(const int cycles_to_use)
 {
     cycles_available -= cycles_to_use;
 }
@@ -1946,33 +1938,33 @@ void CPU::use_cycles(int cycles_to_use)
 /** \brief Set the instruction pointer of the CPU.
  * \param newIP The new value of the instruction pointer.
  */
-void CPU::setIP(const Word newIP)
+void Cpu6502::set_instruction_pointer(const Word newIP)
 {
     // TODO Bounds checking on IP value.
-    this->IP = newIP;
+    this->m_instruction_pointer = newIP;
 }
 
 /** \brief Set the stack pointer of the CPU.
  * \param newSP The new value for the stack pointer.
  */
-void CPU::setSP(const Word newSP)
+void Cpu6502::set_stack_pointer(const Word newSP)
 {
     // TODO Bounds checking on SP value.
-    this->SP = newSP;
+    this->m_stack_pointer = newSP;
 }
 
 /** \brief Get the current value of the CPU instruction pointer.
  * \return Current IP value.
  */
-Word CPU::getIP() const
+Word Cpu6502::get_instruction_pointer() const
 {
-    return this->IP;
+    return this->m_instruction_pointer;
 }
 
 /** \brief Get the current value of the CPU stack pointer.
  * \return Current SP value.
  */
-Word CPU::getSP() const
+Word Cpu6502::get_stack_pointer() const
 {
-    return this->SP;
+    return this->m_stack_pointer;
 }

@@ -1,12 +1,10 @@
-cmake_minimum_required(VERSION 3.18.4)
+cmake_minimum_required(VERSION 3.22.1)
 
 project(emu)
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY build)
+set(CMAKE_CXX_STANDARD 23)
 
 include_directories(include)
 
 add_executable(${PROJECT_NAME} src/main.cpp src/cpu.cpp src/memory.cpp src/system.cpp src/cpu_flag_setters.cpp)
-target_link_libraries(${PROJECT_NAME} -pthread -O3)
-target_compile_options(${PROJECT_NAME} PUBLIC -Wall -Wconversion)
+target_compile_options(${PROJECT_NAME} PRIVATE -Wall -O3 -Wextra -Werror -Wshadow -Wpedantic -Wconversion)

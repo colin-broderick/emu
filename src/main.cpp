@@ -4,10 +4,10 @@
 #include "input_parser.hpp"
 
 /** \brief Application entry point. Creates a NES system and executes a loaded program. */
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
     System NES;
-    
+
     InputParser input{argc, argv};
     if (input.contains("-h") || input.contains("-help") || !input.contains("-r"))
     {
@@ -22,7 +22,7 @@ int main(int argc, char* argv[])
     // Get ROM file name from arguments.
     if (input.contains("-r"))
     {
-        std::string rom_file_name = input.getCmdOption("-r");
+        std::string rom_file_name = input.get_command_option("-r");
         NES.load_rom(rom_file_name);
     }
     else
@@ -34,20 +34,20 @@ int main(int argc, char* argv[])
     // Check for and set stack pointer.
     if (input.contains("-sp"))
     {
-        Word sp;
-        std::istringstream(input.getCmdOption("-sp")) >> std::hex >> sp;
-        NES.cpu.setSP(sp);
+        Word stack_pointer;
+        std::istringstream(input.get_command_option("-sp")) >> std::hex >> stack_pointer;
+        NES.cpu.set_stack_pointer(stack_pointer);
     }
 
     // Check for and set instruction pointer.
     if (input.contains("-ip"))
     {
-        Word ip;
-        std::istringstream(input.getCmdOption("-ip")) >> std::hex >> ip;
-        NES.cpu.setIP(ip);
+        Word instruction_pointer;
+        std::istringstream(input.get_command_option("-ip")) >> std::hex >> instruction_pointer;
+        NES.cpu.set_instruction_pointer(instruction_pointer);
     }
 
-    std::cout << "SP:" << (int)NES.cpu.getSP() << std::endl;
+    std::cout << "SP:" << (int)NES.cpu.get_stack_pointer() << std::endl;
     NES.run();
 
     return 0;
