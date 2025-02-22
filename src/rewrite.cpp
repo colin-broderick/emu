@@ -8,29 +8,10 @@
 #include <fstream>
 #include <chrono>
 #include <thread>
-
-#include "input_parser.hpp"
-
 #include <cstdint>
 
-/** CPU return codes. The CPU will generally run until it exhausts the supply of cycles, but under
- * certain conditions will return one of these codes. */
-enum class ReturnCode
-{
-    /** Instructs the CPU to stop. */
-    BREAK,
-    /** Instructs the CPU to continue. */
-    CONTINUE
-};
-
-namespace Cpu
-{
-    uint16_t get_word(uint16_t address);
-    uint16_t get_word_zpg_wrap(const uint8_t address);
-    void LDX_set_CPU_flags();
-    uint8_t add_with_carry(const uint8_t data);
-    ReturnCode tick(const int cycles_to_add);
-}
+#include "input_parser.hpp"
+#include "rewrite.hpp"
 
 #define DEBUG 1
 
@@ -50,14 +31,6 @@ namespace Cpu
 #define BIT7 0b10000000
 
 constexpr uint32_t ROM_BUFFER_SIZE = 0xFFFF;
-
-namespace Cpu
-{
-    constexpr static int CPU_frequency = 1790000; // Hz
-    constexpr static int frame_rate = 60;
-    constexpr static int cycles_per_frame = CPU_frequency / frame_rate;
-    constexpr static int microseconds_per_frame = 1000000 / frame_rate;
-}
 
 constexpr std::array<std::string_view, 256> instruction_names = {
     "BRK impl", "ORA X,ind", "---", "---", "---", "ORA zpg", "ASL zpg", "---", "PHP impl", "ORA #", "ASL A", "---", "---", "ORA abs", "ASL abs", "---",
@@ -342,8 +315,6 @@ constexpr static uint8_t INSTR_6502_AND_INDIRECT_Y = 0x31; // 5+
 
 namespace Memory
 {
-    std::array<uint8_t, 256 * 256> main_memory{0};
-
     void clear()
     {
         main_memory = {0};
@@ -355,7 +326,7 @@ namespace Bus
 
     /** \brief Run the loaded program until it exits. */
     void run()
-    { 
+    {
         auto time = std::chrono::high_resolution_clock::now();
         auto interval = std::chrono::microseconds{Cpu::microseconds_per_frame};
 
@@ -389,13 +360,7 @@ namespace Bus
 
 namespace Cpu
 {
-    bool C, Z, I, D, B, V, N; // CPU flags.
-
-    int cycles_available = 0;
     bool page_crossed = false;
-    uint16_t instruction_pointer = 0;
-    uint16_t stack_pointer = 0;
-    uint8_t A, X, Y; // Accumulator and registers.
 
     /** \brief Sets appropriate flags after performing LDA operations.
      *
