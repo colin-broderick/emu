@@ -1,34 +1,7 @@
-#include <thread>
-#include <algorithm>
-#include <cstring>
-
-#include "system.hpp"
-
-constexpr uint32_t ROM_BUFFER_SIZE = 0xFFFF;
-
-/** \brief Constructor for the NES system. */
-System::System()
-{
-}
-
-/** \brief Load a standard ROM file into system memory.
- * \param filename The name of the ROM file.
- * \return bool true if load successful, otherwise bool false. TODO
- */
-bool System::load_rom(const std::string &filename)
-{
-    std::ifstream input_file(filename, std::ios::binary);
-    char buf[ROM_BUFFER_SIZE];
-    input_file.read(buf, ROM_BUFFER_SIZE);
-    Byte *buf2 = (Byte *)buf;
-    std::memcpy(memory.data.data(), buf2, ROM_BUFFER_SIZE);
-    return true;
-}
-
 /** \brief Load an example program for testing purposes.
  * \param which Selector for the program to be loaded.
  */
-void System::load_example_prog(const uint32_t which)
+void load_example_prog(const uint32_t which)
 {
     switch (which % 11)
     {
@@ -153,18 +126,5 @@ void System::load_example_prog(const uint32_t which)
         memory[0x31cc] = 0xc0;
         memory[0x44cc] = 0x0c;
         memory[0x2103] = 0x0c;
-    }
-}
-
-/** \brief Run the loaded program until it exits. */
-void System::run()
-{
-    auto time = std::chrono::high_resolution_clock::now();
-    auto interval = std::chrono::microseconds{Cpu6502::microseconds_per_frame};
-
-    while (cpu.run(memory, Cpu6502::cycles_per_frame) != Cpu6502::ReturnCode::BREAK)
-    {
-        time += interval;
-        std::this_thread::sleep_until(time);
     }
 }
